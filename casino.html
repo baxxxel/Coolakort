@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Casino</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0f0f11;--s1:#1a1a1f;--s2:#222228;--s3:#2c2c35;
+  --b1:rgba(255,255,255,0.08);--b2:rgba(255,255,255,0.15);
+  --tx:#f0ede8;--tx2:#9e9a94;--tx3:#55524e;
+  --gold:#e8c97a;--gold2:#c9a84c;
+  --red:#e05c5c;--blue:#5b9cf6;--green:#6bcf8a;--amber:#f0a84a;
+  --r:12px;--rs:8px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overscroll-behavior:none}
+.screen{display:none}.screen.active{display:block}
+
+/* ── SETUP ── */
+#s-setup{padding:0 1.25rem 5rem;max-width:480px;margin:0 auto}
+.setup-topbar{padding:1rem 0 0}
+.setup-back{font-size:13px;color:var(--tx3);text-decoration:none;font-weight:500;display:inline-block;padding:4px 0}
+.setup-back:hover{color:var(--gold)}
+.hero{text-align:center;margin-bottom:2rem;padding-top:1.5rem}
+.hero h1{font-family:'DM Serif Display',serif;font-size:52px;color:var(--gold);line-height:1}
+.hero p{font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:1.5px;margin-top:6px}
+.sec-lbl{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--tx3);font-weight:600;margin-bottom:10px}
+.setup-sec{margin-bottom:2rem}
+.p-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;animation:fadeUp .18s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+.p-num{width:28px;height:28px;border-radius:50%;background:var(--s2);border:1px solid var(--b2);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--tx2);font-weight:600;flex-shrink:0}
+input[type=text]{background:var(--s1);border:1px solid var(--b1);border-radius:var(--rs);color:var(--tx);font-family:'DM Sans',sans-serif;font-size:15px;padding:10px 14px;-webkit-appearance:none;appearance:none}
+input:focus{outline:none;border-color:var(--gold2)}
+input::placeholder{color:var(--tx3)}
+.p-inp{flex:1}
+.btn-add{height:42px;padding:0 16px;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);color:var(--gold);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.btn-add:active{background:var(--s3)}
+
+/* Mode selector */
+.mode-row{display:flex;gap:10px;margin-bottom:1.5rem}
+.mode-btn{flex:1;padding:14px 8px;border:1px solid var(--b1);border-radius:var(--r);background:var(--s1);color:var(--tx2);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s}
+.mode-btn .mode-icon{font-size:24px;display:block;margin-bottom:6px}
+.mode-btn .mode-sub{font-size:10px;font-weight:400;display:block;margin-top:3px;color:var(--tx3)}
+.mode-btn.on{background:var(--gold);color:#1a1200;border-color:var(--gold)}
+.mode-btn.on .mode-sub{color:rgba(26,18,0,0.6)}
+.mode-btn:active{transform:scale(.97)}
+
+.btn-start{width:100%;padding:14px;background:var(--gold);color:#1a1200;border:none;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;cursor:pointer;margin-top:.5rem}
+.btn-start:active{opacity:.85}
+
+/* ── TOPBAR ── */
+#s-game{padding-bottom:5rem}
+.topbar{display:flex;align-items:center;gap:10px;padding:.85rem 1rem .7rem;border-bottom:1px solid var(--b1);position:sticky;top:0;background:var(--bg);z-index:30}
+.topbar-title{font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold);flex:1}
+.topbar-home{color:var(--tx2);font-size:20px;text-decoration:none;padding:4px 8px 4px 0}
+.topbar-home:hover{color:var(--gold)}
+.mode-pill{font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid var(--b1);font-weight:600}
+.mode-pill.bygg{color:var(--green);border-color:rgba(107,207,138,.3);background:rgba(107,207,138,.08)}
+.mode-pill.kryp{color:var(--amber);border-color:rgba(240,168,74,.3);background:rgba(240,168,74,.08)}
+.btn-end-game{background:none;border:1px solid rgba(224,92,92,.4);color:var(--red);border-radius:var(--rs);padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer}
+
+/* ── TABLE (proven pattern from kille) ── */
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+#gtbl{border-collapse:collapse;width:max-content;min-width:100%}
+#gtbl thead th{background:var(--s1);border-bottom:2px solid var(--b2);padding:10px 6px;text-align:center;white-space:nowrap;font-size:11px}
+.th-giv{width:44px;min-width:44px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);font-weight:600}
+.th-p{min-width:80px;width:88px;cursor:pointer;user-select:none;text-align:center}
+.th-p:active{background:var(--s2)}
+.th-p.inactive .ph-name{color:var(--tx3);opacity:.5}
+.ph-name{display:block;font-size:12px;font-weight:600;color:var(--tx);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:82px;margin:0 auto}
+#gtbl tbody tr{border-bottom:1px solid var(--b1)}
+#gtbl tbody tr.cur-row{background:rgba(232,201,122,.04)}
+#gtbl tbody td.td-giv{width:44px;min-width:44px;text-align:center;vertical-align:middle;font-size:11px;font-weight:700;color:var(--tx3);padding:0 4px;letter-spacing:.3px}
+#gtbl tbody td.td-s{width:88px;min-width:80px;height:52px;text-align:center;vertical-align:middle;border-left:1px solid var(--b1);padding:0}
+#gtbl tbody td.td-s.tap{cursor:pointer;background:var(--s1)}
+#gtbl tbody td.td-s.tap:hover{background:var(--s2)}
+#gtbl tbody td.td-s.tap:active{background:var(--s3)}
+#gtbl tbody td.td-s.gone{cursor:default;opacity:.32;background:repeating-linear-gradient(45deg,transparent,transparent 5px,rgba(255,255,255,.025) 5px,rgba(255,255,255,.025) 10px)}
+#gtbl tbody td.td-s.locked{cursor:default}
+.sv{display:inline-block;font-size:17px;font-weight:600;color:var(--tx)}
+.sv.neg{color:var(--red)}
+#gtbl tbody td.td-s.lo .sv{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:2px solid var(--blue);font-size:13px;font-weight:600}
+.edot{color:var(--tx3);font-size:22px}
+#gtbl tfoot td{background:var(--s1);border-top:2px solid var(--b2);font-size:14px;font-weight:700;padding:10px 6px;text-align:center}
+.td-tot-lbl{font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.winning{color:var(--green)}.losing{color:var(--red)}.gone-tot{color:var(--tx3)}
+
+/* ── SCORING SHEET (bottom drawer) ── */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.ov.open{display:flex}
+.sheet{background:var(--s1);border-radius:20px 20px 0 0;padding:1rem 1rem 2.5rem;width:100%;max-width:500px;border-top:1px solid var(--b2);animation:shUp .2s ease;max-height:85vh;overflow-y:auto}
+@keyframes shUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sh-handle{width:36px;height:4px;background:var(--b2);border-radius:2px;margin:0 auto 1rem}
+.sh-title{font-size:15px;font-weight:600;color:var(--tx);text-align:center;margin-bottom:4px}
+.sh-sub{font-size:12px;color:var(--tx3);text-align:center;margin-bottom:16px}
+
+/* Ess+Tabbar picker */
+.et-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.et-row{background:var(--s2);border:1px solid var(--b1);border-radius:var(--rs);padding:10px 12px}
+.et-label{font-size:11px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.counter-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cnt-btn{width:36px;height:36px;border-radius:50%;border:none;font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif}
+.cnt-btn.plus{background:rgba(107,207,138,.25);color:var(--green)}
+.cnt-btn.minus{background:rgba(224,92,92,.2);color:var(--red)}
+.cnt-btn:active{transform:scale(.88)}
+.cnt-val{font-size:22px;font-weight:700;color:var(--tx);min-width:28px;text-align:center}
+
+/* Ess number picker */
+.ess-picker{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:4px}
+.ess-num-btn{width:52px;height:52px;border-radius:50%;border:2px solid var(--b2);background:var(--s2);color:var(--tx);font-family:'DM Sans',sans-serif;font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.ess-num-btn.on{background:rgba(232,201,122,.2);border-color:var(--gold);color:var(--gold)}
+.ess-num-btn:active{transform:scale(.9)}
+/* Big red end game button */
+.btn-end-big{display:block;width:calc(100% - 2.5rem);margin:1rem 1.25rem 0;padding:15px;background:var(--red);color:#fff;border:none;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;cursor:pointer;text-align:center}
+.btn-end-big:active{opacity:.85}
+.player-pick-list{display:flex;flex-direction:column;gap:8px}
+.player-pick-btn{padding:13px 16px;background:var(--s2);border:1px solid var(--b1);border-radius:var(--rs);color:var(--tx);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;text-align:left;width:100%;display:flex;align-items:center;justify-content:space-between}
+.player-pick-btn:active{background:var(--s3)}
+.player-pick-btn.selected{background:rgba(91,156,246,.15);border-color:var(--blue);color:var(--blue)}
+.player-pick-btn .pick-pts{font-size:12px;color:var(--tx3);font-weight:400}
+.ingen-btn{padding:13px 16px;background:none;border:1px solid var(--b1);border-radius:var(--rs);color:var(--tx3);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;text-align:center;width:100%}
+.ingen-btn:active{background:var(--s2)}
+
+/* Round summary */
+.round-summary{background:var(--s2);border:1px solid var(--b1);border-radius:var(--rs);padding:12px 14px;margin-bottom:16px}
+.round-summary-title{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);font-weight:600;margin-bottom:8px}
+.summary-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--b1)}
+.summary-row:last-child{border-bottom:none;padding-top:8px;font-weight:700}
+.summary-name{font-size:13px;color:var(--tx2)}
+.summary-pts{font-size:13px;font-weight:700;color:var(--gold)}
+
+.sh-confirm{width:100%;padding:14px;background:var(--gold);color:#1a1200;border:none;border-radius:var(--rs);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px}
+.sh-confirm:active{opacity:.85}
+.sh-cancel{width:100%;padding:10px;background:none;border:none;color:var(--tx2);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;margin-top:4px}
+.sh-next{width:100%;padding:13px;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:var(--tx);cursor:pointer;margin-top:4px}
+.sh-next:active{background:var(--s3)}
+
+/* ── DIALOGS ── */
+.dlg-ov{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:200;display:none;align-items:center;justify-content:center;padding:1.5rem;backdrop-filter:blur(3px)}
+.dlg-ov.open{display:flex}
+.dlg{background:var(--s1);border-radius:var(--r);padding:1.75rem 1.5rem;width:100%;max-width:340px;border:1px solid var(--b2);animation:dlgIn .16s ease}
+@keyframes dlgIn{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
+.dlg h3{font-family:'DM Serif Display',serif;font-size:24px;color:var(--tx);margin-bottom:8px}
+.dlg p{font-size:14px;color:var(--tx2);line-height:1.55;margin-bottom:1.5rem}
+.dlg-btns{display:flex;gap:10px}
+.dlg-btns button{flex:1;padding:12px;border-radius:var(--rs);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--b2)}
+.dlg-btns button:active{transform:scale(.97)}
+.btn-no{background:none;color:var(--tx)}
+.btn-danger{background:var(--red);color:#fff;border-color:var(--red)}
+.btn-go{background:var(--gold);color:#1a1200;border-color:var(--gold)}
+
+/* ── END SCREEN ── */
+#s-end{max-width:480px;margin:0 auto;padding:0 0 5rem}
+.end-hero{text-align:center;padding:2rem 1.25rem 1.5rem}
+.end-hero h1{font-family:'DM Serif Display',serif;font-size:38px;color:var(--gold)}
+.end-mode-badge{display:inline-block;font-size:11px;font-weight:600;padding:4px 12px;border-radius:99px;margin-top:8px}
+.end-mode-badge.bygg{background:rgba(107,207,138,.12);color:var(--green);border:1px solid rgba(107,207,138,.25)}
+.end-mode-badge.kryp{background:rgba(240,168,74,.12);color:var(--amber);border:1px solid rgba(240,168,74,.25)}
+.end-sec{padding:0 1.25rem;margin-bottom:1.5rem}
+.end-sec-lbl{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--tx3);font-weight:600;margin-bottom:10px}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;height:210px;padding:0 1.25rem;margin-bottom:2rem}
+.p-slot{flex:1;max-width:115px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.p-info{text-align:center;margin-bottom:8px;padding:0 4px}
+.p-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;margin:0 auto 6px}
+.p-slot:nth-child(1) .p-avatar{background:rgba(91,156,246,.15);color:var(--blue);border:2px solid var(--blue)}
+.p-slot:nth-child(2) .p-avatar{background:rgba(232,201,122,.18);color:var(--gold);border:2px solid var(--gold)}
+.p-slot:nth-child(3) .p-avatar{background:rgba(107,207,138,.12);color:var(--green);border:1px solid var(--green)}
+.p-name{font-size:13px;font-weight:600;color:var(--tx);word-break:break-word}
+.p-pts{font-size:12px;color:var(--tx2);margin-top:2px}
+.p-block{width:100%;border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center}
+.p-place{font-family:'DM Serif Display',serif;font-size:30px}
+.p-slot:nth-child(1) .p-block{height:105px;background:linear-gradient(180deg,rgba(91,156,246,.18),rgba(91,156,246,.05));border:1px solid rgba(91,156,246,.25)}
+.p-slot:nth-child(1) .p-place{color:var(--blue)}
+.p-slot:nth-child(2) .p-block{height:148px;background:linear-gradient(180deg,rgba(232,201,122,.22),rgba(232,201,122,.06));border:1px solid rgba(232,201,122,.3)}
+.p-slot:nth-child(2) .p-place{color:var(--gold)}
+.p-slot:nth-child(3) .p-block{height:72px;background:linear-gradient(180deg,rgba(107,207,138,.14),rgba(107,207,138,.04));border:1px solid rgba(107,207,138,.2)}
+.p-slot:nth-child(3) .p-place{color:var(--green)}
+.remain-row{display:flex;align-items:center;padding:12px 16px;background:var(--s1);border:1px solid var(--b1);border-radius:var(--rs);margin-bottom:6px}
+.remain-rank{font-size:12px;color:var(--tx3);font-weight:700;width:22px}
+.remain-name{flex:1;font-size:15px;font-weight:500;color:var(--tx);margin-left:10px}
+.remain-pts{font-size:15px;font-weight:700;color:var(--tx2)}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px 14px 12px}
+.stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--tx3);font-weight:600;margin-bottom:6px}
+.stat-val{font-size:20px;font-weight:700;color:var(--tx);line-height:1.15}
+.stat-sub{font-size:11px;color:var(--tx2);margin-top:3px}
+.stat-val.gold{color:var(--gold)}.stat-val.blue{color:var(--blue)}.stat-val.green{color:var(--green)}
+.chart-box{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px 12px 12px;overflow:hidden}
+#score-chart{display:block;width:100%}
+.chart-legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:12px}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2)}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+#etbl{border-collapse:collapse;width:max-content;min-width:100%}
+#etbl th{background:var(--s1);padding:8px 6px;font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--b2);text-align:center}
+#etbl td{text-align:center;vertical-align:middle;border-bottom:1px solid var(--b1)}
+#etbl .etd-giv{width:44px;font-size:11px;font-weight:700;color:var(--tx3);padding:0 6px;height:44px}
+#etbl .etd-s{height:44px;min-width:72px;border-left:1px solid var(--b1)}
+#etbl tfoot td{background:var(--s1);font-size:14px;font-weight:700;padding:10px 6px;border-top:1px solid var(--b2)}
+#etbl tfoot .elbl{font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.end-btns{padding:0 1.25rem;display:flex;flex-direction:column;gap:10px}
+.btn-again{width:100%;padding:14px;background:var(--gold);color:#1a1200;border:none;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;cursor:pointer}
+.btn-again:active{opacity:.85}
+.btn-quit{width:100%;padding:13px;background:none;border:1px solid var(--b2);border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;color:var(--tx2);cursor:pointer}
+.btn-quit:active{background:var(--s2)}
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="s-setup" class="screen active">
+  <div class="setup-topbar" id="setup-topbar">
+    <a href="index.html" class="setup-back">← Alla spel</a>
+  </div>
+  <div class="hero"><h1>Casino</h1><p>Kortspel · Poängtavla</p></div>
+
+  <div class="setup-sec">
+    <div class="sec-lbl">Spelare</div>
+    <div id="pfields">
+      <div class="p-row" id="prow-0">
+        <div class="p-num">1</div>
+        <input class="p-inp" type="text" id="pi-0" placeholder="Spelare 1" maxlength="28">
+        <button class="btn-add" onclick="addRow(0)">Lägg till</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="setup-sec">
+    <div class="sec-lbl">Spelläge</div>
+    <div class="mode-row">
+      <button class="mode-btn on" id="btn-bygg" onclick="setMode('bygg')">
+        <span class="mode-icon">🏗️</span>
+        Bygg
+        <span class="mode-sub">Mest poäng vinner</span>
+      </button>
+      <button class="mode-btn" id="btn-kryp" onclick="setMode('kryp')">
+        <span class="mode-icon">🐍</span>
+        Kryp
+        <span class="mode-sub">Minst poäng vinner</span>
+      </button>
+    </div>
+  </div>
+
+  <button class="btn-start" onclick="startGame()">Starta match</button>
+</div>
+
+<!-- GAME -->
+<div id="s-game" class="screen">
+  <div class="topbar">
+    <a href="index.html" class="topbar-home">←</a>
+    <span class="topbar-title">Casino</span>
+    <span class="mode-pill" id="mode-pill">Bygg</span>
+    <button class="btn-end-game" onclick="openDlg('d-endconf')">Avsluta</button>
+  </div>
+  <div class="tbl-scroll">
+    <table id="gtbl">
+      <colgroup id="g-cols"></colgroup>
+      <thead id="g-head"></thead>
+      <tbody id="g-body"></tbody>
+      <tfoot id="g-foot"></tfoot>
+    </table>
+  </div>
+  <button class="btn-end-big" onclick="openDlg('d-endconf')">Avsluta spel</button>
+</div>
+
+<!-- END -->
+<div id="s-end" class="screen">
+  <div class="end-hero">
+    <h1>Matchen slut</h1>
+    <div class="end-mode-badge" id="end-mode-badge">Bygg</div>
+  </div>
+  <div class="podium" id="e-podium"></div>
+  <div class="end-sec" id="e-remaining"></div>
+  <div class="end-sec"><div class="end-sec-lbl">Matchstatistik</div><div class="stats-grid" id="e-stats"></div></div>
+  <div class="end-sec">
+    <div class="end-sec-lbl">Poängutveckling</div>
+    <div class="chart-box"><canvas id="score-chart"></canvas><div class="chart-legend" id="e-legend"></div></div>
+  </div>
+  <div class="end-sec">
+    <div class="end-sec-lbl">Alla rundor</div>
+    <div class="tbl-scroll"><table id="etbl"><colgroup id="e-cols"></colgroup><thead id="e-head"></thead><tbody id="e-body"></tbody><tfoot id="e-foot"></tfoot></table></div>
+  </div>
+  <div class="end-btns">
+    <button class="btn-again" onclick="askAgain()">Spela igen</button>
+    <button class="btn-quit" onclick="goHome()">Avsluta</button>
+  </div>
+</div>
+
+<!-- SCORING SHEET -->
+<div class="ov" id="ov-score" onclick="if(event.target===this){}">
+  <div class="sheet" id="score-sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="sh-title">Registrera poäng</div>
+    <div class="sh-sub" id="sh-sub"></div>
+    <div id="sh-content"></div>
+  </div>
+</div>
+
+<!-- DIALOG: Avsluta -->
+<div class="dlg-ov" id="d-endconf">
+  <div class="dlg">
+    <h3>Avsluta spelet?</h3>
+    <p>Är du säker? Matchen avslutas och resultatet visas.</p>
+    <div class="dlg-btns">
+      <button class="btn-no" onclick="closeDlg('d-endconf')">Avbryt</button>
+      <button class="btn-danger" onclick="endGame()">Ja, avsluta</button>
+    </div>
+  </div>
+</div>
+
+<!-- DIALOG: Ge upp 1 -->
+<div class="dlg-ov" id="d-gu1">
+  <div class="dlg">
+    <h3>Ge upp?</h3>
+    <p id="d-gu1-txt"></p>
+    <div class="dlg-btns">
+      <button class="btn-no" onclick="closeDlg('d-gu1')">Avbryt</button>
+      <button class="btn-danger" onclick="gu2()">Ge upp</button>
+    </div>
+  </div>
+</div>
+
+<!-- DIALOG: Ge upp 2 -->
+<div class="dlg-ov" id="d-gu2">
+  <div class="dlg">
+    <h3>Är du säker?</h3>
+    <p>Det går inte att ångra. Spelaren gråas ut och inga fler poäng läggs till.</p>
+    <div class="dlg-btns">
+      <button class="btn-no" onclick="closeDlg('d-gu2')">Avbryt</button>
+      <button class="btn-danger" onclick="doGiveUp()">Ja, ge upp</button>
+    </div>
+  </div>
+</div>
+
+<!-- DIALOG: Spela igen -->
+<div class="dlg-ov" id="d-again">
+  <div class="dlg">
+    <h3>Spela igen?</h3>
+    <p>Vill ni spela med samma deltagare eller börja om med nya namn?</p>
+    <div class="dlg-btns" style="flex-direction:column;gap:8px">
+      <button class="btn-go" onclick="againSame()">Samma deltagare</button>
+      <button class="btn-no" style="border:1px solid var(--b2)" onclick="againNew()">Nya spelare</button>
+    </div>
+  </div>
+</div>
+
+<!-- DIALOG: Välj läge för omspel -->
+<div class="dlg-ov" id="d-remode">
+  <div class="dlg">
+    <h3>Välj spelläge</h3>
+    <p>Bygg eller Kryp?</p>
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <button class="mode-btn" id="remode-bygg" onclick="setRemode('bygg')" style="flex:1;padding:12px 8px">
+        <span class="mode-icon">🏗️</span>Bygg
+        <span class="mode-sub">Mest poäng vinner</span>
+      </button>
+      <button class="mode-btn" id="remode-kryp" onclick="setRemode('kryp')" style="flex:1;padding:12px 8px">
+        <span class="mode-icon">🐍</span>Kryp
+        <span class="mode-sub">Minst poäng vinner</span>
+      </button>
+    </div>
+    <button class="btn-go" style="width:100%;padding:13px;border:none;border-radius:var(--rs);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;background:var(--gold);color:#1a1200" onclick="confirmRemode()">Starta →</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const CHART_COLORS = ['#e8c97a','#5b9cf6','#6bcf8a','#e05c5c','#c47ef5','#f0a84a','#5dd8d8','#f57eb6'];
+
+// ── STATE ──
+let players   = [];   // {id, name, active, total}
+let rounds    = [];   // {scores:{pid:int}, dealerId, detail:{pid:{ess,tabbar,kortPts,spaderPts,lillan,storanPts}}}
+let mode      = 'bygg'; // 'bygg' | 'kryp'
+let rowCount  = 1;
+let giveUpId  = null;
+
+// Scoring wizard state
+let wizState  = null; // current wizard session
+
+// ── SETUP ──
+function setMode(m) {
+  mode = m;
+  document.getElementById('btn-bygg').classList.toggle('on', m==='bygg');
+  document.getElementById('btn-kryp').classList.toggle('on', m==='kryp');
+}
+
+function addRow(fromIdx) {
+  const inp = document.getElementById('pi-' + fromIdx);
+  if (!inp.value.trim()) { inp.focus(); return; }
+  inp.parentElement.querySelector('.btn-add').style.display = 'none';
+  const ni = rowCount++;
+  const div = document.createElement('div');
+  div.className='p-row'; div.id='prow-'+ni;
+  div.innerHTML=`<div class="p-num">${ni+1}</div>
+    <input class="p-inp" type="text" id="pi-${ni}" placeholder="Spelare ${ni+1}" maxlength="28">
+    <button class="btn-add" onclick="addRow(${ni})">Lägg till</button>`;
+  document.getElementById('pfields').appendChild(div);
+  const ni2=ni;
+  div.querySelector('input').addEventListener('keydown',e=>{if(e.key==='Enter')addRow(ni2);});
+  div.querySelector('input').focus();
+}
+
+function startGame() {
+  const names = Array.from(document.querySelectorAll('#pfields .p-inp'))
+                     .map(i=>i.value.trim()).filter(Boolean);
+  if (names.length < 2) { alert('Minst 2 spelare krävs.'); return; }
+  players = names.map((name,i)=>({id:i,name,active:true,total:0}));
+  rounds  = [];
+  const pill = document.getElementById('mode-pill');
+  pill.textContent = mode==='bygg'?'Bygg':'Kryp';
+  pill.className = 'mode-pill ' + mode;
+  showScreen('s-game');
+  renderGame();
+}
+
+// ── DEALER ──
+function dealerForRound(ri) {
+  const active = players.filter(p=>p.active);
+  if (!active.length) return null;
+  const firstId = rounds[0]?.dealerId ?? active[0].id;
+  const base    = active.findIndex(p=>p.id===firstId);
+  return active[((base>=0?base:0)+ri) % active.length];
+}
+
+function calcTotals() {
+  players.forEach(p=>{
+    p.total=rounds.reduce((s,r)=>{
+      const v=r.scores[p.id]; return s+(v!==null&&v!==undefined?v:0);
+    },0);
+  });
+}
+
+function ini(name){return name.trim().split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2);}
+
+// ── RENDER ──
+function renderGame() {
+  calcTotals();
+  const lastRi = rounds.length-1;
+  const prevRi = rounds.length-2;
+  const hasCurrentRound = rounds.length > 0;
+
+  // Colgroup
+  const cg=document.getElementById('g-cols');
+  cg.innerHTML='<col style="width:44px">'+ players.map(()=>'<col style="min-width:80px;width:88px">').join('');
+
+  // Head
+  let hh='<tr><th class="th-giv">Giv</th>';
+  players.forEach(p=>{
+    hh+=`<th class="th-p${p.active?'':' inactive'}" onclick="openGU1(${p.id})">
+      <span class="ph-name">${p.name}</span></th>`;
+  });
+  hh+='</tr>';
+  document.getElementById('g-head').innerHTML=hh;
+
+  // Body
+  const tbody=document.getElementById('g-body');
+  tbody.innerHTML='';
+
+  rounds.forEach((round,ri)=>{
+    const dealer=dealerForRound(ri);
+    const isCur =ri===lastRi;
+    const editable=ri===lastRi||ri===prevRi;
+
+    // For blue ring: lowest total (kryp) or highest total (bygg) after this round
+    const afterTotal={};
+    players.forEach(p=>{
+      afterTotal[p.id]=rounds.slice(0,ri+1).reduce((s,r)=>{
+        const v=r.scores[p.id]; return s+(v!==null&&v!==undefined?v:0);
+      },0);
+    });
+    const filled=players.filter(p=>{const v=round.scores[p.id];return v!==null&&v!==undefined;});
+    const roundDone=players.filter(p=>p.active).every(p=>{const v=round.scores[p.id];return v!==null&&v!==undefined;});
+
+    let ringVal=null;
+    if((roundDone||isCur)&&filled.length>1){
+      const vals=filled.map(p=>afterTotal[p.id]);
+      ringVal = mode==='bygg' ? Math.max(...vals) : Math.min(...vals);
+    }
+
+    const tr=document.createElement('tr');
+    if(isCur) tr.classList.add('cur-row');
+
+    const giv=document.createElement('td');
+    giv.className='td-giv';
+    giv.textContent=dealer?ini(dealer.name):'';
+    tr.appendChild(giv);
+
+    players.forEach(p=>{
+      const score=round.scores[p.id];
+      const has  =score!==null&&score!==undefined;
+      const isLo =has&&afterTotal[p.id]===ringVal&&filled.length>1;
+      const gone =!p.active;
+
+      const td=document.createElement('td');
+      // Current row: no tap class, no click, no dot — just show filled scores
+      td.className='td-s '+(gone?'gone':'locked')+(isLo?' lo':'');
+
+      if(has){
+        const sp=document.createElement('span');
+        const zeroKryp = mode==='kryp' && score===0;
+        sp.className='sv';
+        if(zeroKryp) sp.style.color='var(--green)';
+        sp.textContent=(score>0?'+':'')+score;
+        td.appendChild(sp);
+      }
+      // No empty dot for current row — button handles registration
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  // Add "new round" row if all players in current round have scores
+  const allDone = rounds.length>0 && players.filter(p=>p.active).every(p=>{
+    const v=rounds[lastRi].scores[p.id]; return v!==null&&v!==undefined;
+  });
+
+  // Foot
+  let ft='<tr><td class="td-tot-lbl">Tot</td>';
+  players.forEach(p=>{
+    const cls=!p.active?' gone-tot':'';
+    ft+=`<td class="${cls}">${p.total}</td>`;
+  });
+  ft+='</tr>';
+  document.getElementById('g-foot').innerHTML=ft;
+
+  // Always show register button for current round if not all scores filled yet,
+  // OR show "next round" button when round is done
+  const existingBtn=document.getElementById('new-round-btn-row');
+  if(existingBtn) existingBtn.remove();
+
+  const btnRow=document.createElement('tr');
+  btnRow.id='new-round-btn-row';
+  const btnTd=document.createElement('td');
+  btnTd.colSpan=players.length+1;
+  btnTd.style.cssText='padding:12px 10px;text-align:center';
+
+  if(allDone){
+    // Round complete — show next dealer and next round button
+    const nextRi=rounds.length;
+    const nextDealer=dealerForRound(nextRi);
+    btnTd.innerHTML=`<div style="font-size:11px;color:var(--tx3);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">
+      Nästa giv: <span style="color:var(--gold)">${nextDealer?nextDealer.name:'–'}</span>
+    </div>
+    <button id="new-round-inner-btn" style="background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);color:var(--gold);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;padding:10px 24px;cursor:pointer">
+      Registrera poäng →
+    </button>`;
+    btnRow.appendChild(btnTd);
+    tbody.appendChild(btnRow);
+    btnTd.querySelector('#new-round-inner-btn').onclick=startNewRound;
+  } else if(rounds.length>0){
+    // Current round not done — show "register scores" button
+    const curDealer=dealerForRound(lastRi);
+    btnTd.innerHTML=`<div style="font-size:11px;color:var(--tx3);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">
+      Giv: <span style="color:var(--gold)">${curDealer?curDealer.name:'–'}</span>
+    </div>
+    <button id="new-round-inner-btn" style="background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);color:var(--gold);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;padding:10px 24px;cursor:pointer">
+      Registrera poäng →
+    </button>`;
+    btnRow.appendChild(btnTd);
+    tbody.appendChild(btnRow);
+    btnTd.querySelector('#new-round-inner-btn').onclick=()=>openScoreSheet(lastRi, players.find(p=>p.active)?.id);
+  }
+}
+
+function startNewRound(){
+  const ri=rounds.length;
+  const dealer=dealerForRound(ri);
+  const scores={};
+  players.forEach(p=>{scores[p.id]=null;});
+  rounds.push({scores,dealerId:dealer?dealer.id:players[0].id,detail:{}});
+  renderGame();
+  const first=players.find(p=>p.active);
+  if(first) setTimeout(()=>openScoreSheet(rounds.length-1, first.id), 80);
+}
+
+// ── SCORING WIZARD ──
+const STEP_LABELS = {
+  'et':           (idx,total)=>`(${idx+1}/${total+4}) – Ess & Tabbar`,
+  'flest-kort':   (n,total)=>`(${n+1}/${total+4}) – Flest kort`,
+  'flest-spader': (n,total)=>`(${n+2}/${total+4}) – Flest spader`,
+  'lillan':       (n,total)=>`(${n+3}/${total+4}) – Lillan ♠2`,
+  'storan':       (n,total)=>`(${n+4}/${total+4}) – Storan ♦10`,
+  'summary':      ()=>'Sammanfattning',
+};
+
+function stepSubLabel() {
+  const {currentStep,currentPlayerIdx,active}=wizState;
+  const n=active.length;
+  if(currentStep==='et') return STEP_LABELS.et(currentPlayerIdx,n);
+  if(currentStep==='flest-kort') return STEP_LABELS['flest-kort'](n,n);
+  if(currentStep==='flest-spader') return STEP_LABELS['flest-spader'](n,n);
+  if(currentStep==='lillan') return STEP_LABELS.lillan(n,n);
+  if(currentStep==='storan') return STEP_LABELS.storan(n,n);
+  return STEP_LABELS.summary();
+}
+
+function totalEssUsed(excludePid) {
+  let used=0;
+  wizState.active.forEach(p=>{
+    if(p.id!==excludePid) used+=wizState.etData[p.id].ess;
+  });
+  return used;
+}
+
+function openScoreSheet(ri, startPid) {
+  const active=players.filter(p=>p.active);
+  wizState={
+    ri, active,
+    etData:{},
+    flestKort:null, flestSpader:null, lillan:null, storan:null,
+    currentStep:'et', currentPlayerIdx:0,
+  };
+  active.forEach(p=>{wizState.etData[p.id]={ess:0,tabbar:0};});
+  document.getElementById('ov-score').classList.add('open');
+  renderWizardStep();
+}
+
+function renderWizardStep() {
+  if(!wizState) return;
+  const {active,currentStep,currentPlayerIdx}=wizState;
+  document.getElementById('sh-sub').textContent=stepSubLabel();
+
+  const shTitle=document.getElementById('sh-title');
+  const shContent=document.getElementById('sh-content');
+
+  if(currentStep==='et') {
+    const p=active[currentPlayerIdx];
+    shTitle.textContent=p.name;
+    const et=wizState.etData[p.id];
+    const usedByOthers=totalEssUsed(p.id);
+    const maxEss=Math.min(4,4-usedByOthers);
+
+    // Ess: number buttons 0..maxEss
+    let essBtns='';
+    for(let i=0;i<=maxEss;i++){
+      essBtns+=`<button class="ess-num-btn${et.ess===i?' on':''}" onclick="setEss(${p.id},${i})">${i}</button>`;
+    }
+
+    shContent.innerHTML=`
+      <div class="et-row" style="margin-bottom:12px">
+        <div class="et-label">Antal Ess</div>
+        <div class="ess-picker">${essBtns}</div>
+      </div>
+      <div class="et-row" style="margin-bottom:20px">
+        <div class="et-label">Tabbar</div>
+        <div class="counter-row">
+          <button class="cnt-btn minus" onclick="adjET(${p.id},'tabbar',-1)">−</button>
+          <span class="cnt-val" id="cnt-tab-${p.id}">${et.tabbar}</span>
+          <button class="cnt-btn plus" onclick="adjET(${p.id},'tabbar',1)">+</button>
+        </div>
+      </div>
+      <button class="sh-next" onclick="wizNext()">Nästa →</button>
+      <button class="sh-cancel" onclick="closeScoreSheet()">Avbryt</button>`;
+    return;
+  }
+
+  if(currentStep==='flest-kort'){
+    shTitle.textContent='Flest kort';
+    shContent.innerHTML=renderPlayerPicker('flestKort','wizPickFlestKort',1);
+    return;
+  }
+
+  if(currentStep==='flest-spader'){
+    shTitle.textContent='Flest spader';
+    shContent.innerHTML=renderPlayerPicker('flestSpader','wizPickFlestSpader',2);
+    return;
+  }
+
+  if(currentStep==='lillan'){
+    shTitle.textContent='Lillan ♠2';
+    shContent.innerHTML=renderPlayerPicker('lillan','wizPickLillan',1);
+    return;
+  }
+
+  if(currentStep==='storan'){
+    shTitle.textContent='Storan ♦10';
+    shContent.innerHTML=renderPlayerPicker('storan','wizPickStoran',2);
+    return;
+  }
+
+  if(currentStep==='summary'){
+    renderSummary(shTitle,shContent);
+    return;
+  }
+}
+
+function renderPlayerPicker(stateKey, fnName, pts) {
+  const curVal=wizState[stateKey];
+  let html='<div class="player-pick-list">';
+  wizState.active.forEach(p=>{
+    const sel=curVal===p.id?' selected':'';
+    html+=`<button class="player-pick-btn${sel}" onclick="${fnName}(${p.id})">
+      ${p.name}<span class="pick-pts">+${pts} p</span></button>`;
+  });
+  html+=`<button class="ingen-btn" onclick="${fnName}(null)">Ingen / Oavgjort</button>`;
+  html+=`</div><button class="sh-cancel" style="margin-top:12px" onclick="closeScoreSheet()">Avbryt</button>`;
+  return html;
+}
+
+function setEss(pid,val){
+  wizState.etData[pid].ess=val;
+  renderWizardStep();
+}
+
+function adjET(pid,field,delta){
+  wizState.etData[pid][field]=Math.max(0,wizState.etData[pid][field]+delta);
+  const el=document.getElementById('cnt-tab-'+pid);
+  if(el) el.textContent=wizState.etData[pid][field];
+}
+
+// Auto-advance helpers — highlight blue then move on after 700ms
+function autoAdvance(fn) {
+  setTimeout(()=>{ fn(); renderWizardStep(); }, 700);
+}
+
+function wizPickFlestKort(pid){
+  wizState.flestKort=pid;
+  renderWizardStep(); // show selection blue
+  autoAdvance(()=>{ wizState.currentStep='flest-spader'; });
+}
+function wizPickFlestSpader(pid){
+  wizState.flestSpader=pid;
+  renderWizardStep();
+  autoAdvance(()=>{ wizState.currentStep='lillan'; });
+}
+function wizPickLillan(pid){
+  wizState.lillan=pid;
+  renderWizardStep();
+  autoAdvance(()=>{ wizState.currentStep='storan'; });
+}
+function wizPickStoran(pid){
+  wizState.storan=pid;
+  renderWizardStep();
+  autoAdvance(()=>{ wizState.currentStep='summary'; });
+}
+
+function wizNext(){
+  const {currentStep,currentPlayerIdx,active}=wizState;
+  if(currentStep==='et'){
+    if(currentPlayerIdx<active.length-1){
+      wizState.currentPlayerIdx++;
+    } else {
+      wizState.currentStep='flest-kort';
+    }
+  }
+  renderWizardStep();
+}
+
+function renderSummary(shTitle,shContent){
+  shTitle.textContent='Sammanfattning';
+  const {active,etData,flestKort,flestSpader,lillan,storan}=wizState;
+  const pts={};
+  active.forEach(p=>{pts[p.id]=0;});
+  active.forEach(p=>{ pts[p.id]+=etData[p.id].ess+etData[p.id].tabbar; });
+  if(flestKort!=null) pts[flestKort]+=1;
+  if(flestSpader!=null) pts[flestSpader]+=2;
+  if(lillan!=null) pts[lillan]+=1;
+  if(storan!=null) pts[storan]+=2;
+
+  let rows='';
+  active.forEach(p=>{
+    const d=etData[p.id];
+    const parts=[];
+    if(d.ess>0) parts.push(`${d.ess} ess`);
+    if(d.tabbar>0) parts.push(`${d.tabbar} tab${d.tabbar>1?'bar':''}`);
+    if(flestKort===p.id) parts.push('flest kort');
+    if(flestSpader===p.id) parts.push('flest spader');
+    if(lillan===p.id) parts.push('lillan');
+    if(storan===p.id) parts.push('storan');
+    rows+=`<div class="summary-row">
+      <span class="summary-name">${p.name}${parts.length?' <small style="color:var(--tx3);">('+parts.join(', ')+')</small>':''}</span>
+      <span class="summary-pts">+${pts[p.id]}</span>
+    </div>`;
+  });
+
+  shContent.innerHTML=`
+    <div class="round-summary">
+      <div class="round-summary-title">Poäng denna runda</div>
+      ${rows}
+    </div>
+    <button class="sh-confirm" onclick="confirmScores()">Bekräfta</button>
+    <button class="sh-next" style="margin-top:8px;background:none;color:var(--tx2)" onclick="wizBack()">← Tillbaka</button>
+    <button class="sh-cancel" onclick="closeScoreSheet()">Avbryt</button>`;
+}
+
+function wizBack(){
+  const s=wizState.currentStep;
+  if(s==='summary') wizState.currentStep='storan';
+  else if(s==='storan') wizState.currentStep='lillan';
+  else if(s==='lillan') wizState.currentStep='flest-spader';
+  else if(s==='flest-spader') wizState.currentStep='flest-kort';
+  else if(s==='flest-kort'){wizState.currentStep='et';wizState.currentPlayerIdx=wizState.active.length-1;}
+  else if(s==='et'&&wizState.currentPlayerIdx>0) wizState.currentPlayerIdx--;
+  renderWizardStep();
+}
+
+function confirmScores(){
+  const {ri,active,etData,flestKort,flestSpader,lillan,storan}=wizState;
+  const round=rounds[ri];
+  const detail={};
+  active.forEach(p=>{
+    const d=etData[p.id];
+    let score=d.ess+d.tabbar;
+    if(flestKort===p.id) score+=1;
+    if(flestSpader===p.id) score+=2;  // 2p for flest spader
+    if(lillan===p.id) score+=1;
+    if(storan===p.id) score+=2;
+    round.scores[p.id]=score;
+    detail[p.id]={ess:d.ess,tabbar:d.tabbar,flestKort:flestKort===p.id,flestSpader:flestSpader===p.id,lillan:lillan===p.id,storan:storan===p.id,total:score};
+  });
+  round.detail=detail;
+  closeScoreSheet();
+  calcTotals();
+  renderGame();
+}
+
+function closeScoreSheet(){
+  document.getElementById('ov-score').classList.remove('open');
+  wizState=null;
+  renderGame();
+}
+
+// ── GIVE UP ──
+function openGU1(pid){
+  if(!players.find(p=>p.id===pid)?.active) return;
+  giveUpId=pid;
+  const p=players.find(x=>x.id===pid);
+  document.getElementById('d-gu1-txt').innerHTML=`Vill du ta bort <strong>${p.name}</strong>? Historiken behålls men inga fler poäng läggs till.`;
+  openDlg('d-gu1');
+}
+function gu2(){closeDlg('d-gu1');openDlg('d-gu2');}
+function doGiveUp(){
+  closeDlg('d-gu2');
+  if(giveUpId===null) return;
+  players.find(x=>x.id===giveUpId).active=false;
+  giveUpId=null;calcTotals();renderGame();
+}
+
+// ── DIALOGS ──
+function openDlg(id){document.getElementById(id).classList.add('open');}
+function closeDlg(id){document.getElementById(id).classList.remove('open');}
+
+// ── END ──
+function endGame(){
+  closeDlg('d-endconf');
+  calcTotals();
+  buildEnd();
+  showScreen('s-end');
+}
+
+function buildEnd(){
+  // In bygg: highest wins → sort descending. In kryp: lowest wins → sort ascending.
+  const sorted=[...players].sort((a,b)=>mode==='bygg'?b.total-a.total:a.total-b.total);
+  const badge=document.getElementById('end-mode-badge');
+  badge.textContent=mode==='bygg'?'Bygg':'Kryp';
+  badge.className='end-mode-badge '+mode;
+  buildPodium(sorted);buildRemaining(sorted);buildStats(sorted);buildChart(sorted);buildEndTable();
+}
+
+function buildPodium(sorted){
+  const pod=document.getElementById('e-podium');
+  pod.innerHTML='';
+  [sorted[1]||null,sorted[0]||null,sorted[2]||null].forEach((p,si)=>{
+    const slot=document.createElement('div');slot.className='p-slot';
+    if(!p){pod.appendChild(slot);return;}
+    slot.innerHTML=`<div class="p-info">
+      <div class="p-avatar">${ini(p.name)}</div>
+      <div class="p-name">${p.name}</div>
+      <div class="p-pts">${p.total} p</div>
+    </div><div class="p-block"><span class="p-place">${[2,1,3][si]}</span></div>`;
+    pod.appendChild(slot);
+  });
+}
+
+function buildRemaining(sorted){
+  const sec=document.getElementById('e-remaining');
+  if(sorted.length<=3){sec.innerHTML='';return;}
+  sec.innerHTML='<div class="end-sec-lbl">Övriga</div>'+
+    sorted.slice(3).map((p,i)=>`<div class="remain-row">
+      <span class="remain-rank">${i+4}</span>
+      <span class="remain-name">${p.name}</span>
+      <span class="remain-pts">${p.total} p</span>
+    </div>`).join('');
+}
+
+function buildStats(sorted){
+  const winner=sorted[0],loser=sorted[sorted.length-1];
+  let highScore=-Infinity,highP=null,highR=-1;
+  rounds.forEach((r,ri)=>{
+    players.forEach(p=>{
+      const v=r.scores[p.id];
+      if(v!==null&&v!==undefined&&v>highScore){highScore=v;highP=p;highR=ri+1;}
+    });
+  });
+
+  // Scoring round percentage
+  const scoringRounds={};
+  players.forEach(p=>{scoringRounds[p.id]=0;});
+  rounds.forEach(r=>{
+    players.forEach(p=>{
+      const v=r.scores[p.id];
+      if(v!==null&&v!==undefined&&v>=1) scoringRounds[p.id]++;
+    });
+  });
+  const totalRounds=rounds.length||1;
+
+  let scoreStat;
+  if(mode==='bygg'){
+    const bestScorer=players.reduce((a,b)=>scoringRounds[a.id]>=scoringRounds[b.id]?a:b);
+    const pct=Math.round(scoringRounds[bestScorer.id]/totalRounds*100);
+    scoreStat={lbl:'Flest poängrundor',val:pct+'%',sub:bestScorer.name+' ('+scoringRounds[bestScorer.id]+'/'+totalRounds+')',cls:'blue'};
+  } else {
+    // Kryp: who had fewest scoring rounds = most zero rounds
+    const zeroRounds={};
+    players.forEach(p=>{ zeroRounds[p.id]=totalRounds-scoringRounds[p.id]; });
+    const bestZero=players.reduce((a,b)=>zeroRounds[a.id]>=zeroRounds[b.id]?a:b);
+    const pct=Math.round(zeroRounds[bestZero.id]/totalRounds*100);
+    scoreStat={lbl:'Minst poängrundor',val:pct+'%',sub:bestZero.name+' ('+zeroRounds[bestZero.id]+'/'+totalRounds+' nollor)',cls:'green'};
+  }
+
+  const storanCount={},tabbarTotal={};
+  players.forEach(p=>{storanCount[p.id]=0;tabbarTotal[p.id]=0;});
+  rounds.forEach(r=>{
+    if(!r.detail) return;
+    players.forEach(p=>{
+      if(r.detail[p.id]){
+        if(r.detail[p.id].storan) storanCount[p.id]++;
+        tabbarTotal[p.id]+=r.detail[p.id].tabbar||0;
+      }
+    });
+  });
+  const mostTabbar=players.reduce((a,b)=>tabbarTotal[a.id]>=tabbarTotal[b.id]?a:b);
+  const mostStoran=players.reduce((a,b)=>storanCount[a.id]>=storanCount[b.id]?a:b);
+
+  document.getElementById('e-stats').innerHTML=[
+    {lbl:'Bästa runda',val:highP?'+'+highScore+' p':'–',sub:highP?highP.name+', runda '+highR:'',cls:'gold'},
+    scoreStat,
+    {lbl:'Vinnare',val:winner.name,sub:winner.total+' p',cls:'gold'},
+    {lbl:'Flest tabbar',val:tabbarTotal[mostTabbar.id],sub:mostTabbar.name,cls:'green'},
+    {lbl:'Flest storor',val:storanCount[mostStoran.id],sub:mostStoran.name,cls:'blue'},
+    {lbl:'Antal rundor',val:rounds.length,sub:'',cls:''},
+  ].map(c=>`<div class="stat-card">
+    <div class="stat-lbl">${c.lbl}</div>
+    <div class="stat-val${c.cls?' '+c.cls:''}">${c.val}</div>
+    ${c.sub?`<div class="stat-sub">${c.sub}</div>`:''}
+  </div>`).join('');
+}
+
+function buildChart(sorted){
+  requestAnimationFrame(()=>{
+    const canvas=document.getElementById('score-chart');
+    const legend=document.getElementById('e-legend');
+    if(!rounds.length){canvas.style.display='none';return;}
+    canvas.style.display='block';
+    const series=players.map((p,pi)=>{
+      let run=0;
+      const pts=[0,...rounds.map(r=>{run+=(r.scores[p.id]??0);return run;})];
+      return{p,pts,color:CHART_COLORS[pi%CHART_COLORS.length]};
+    });
+    const numX=rounds.length+1;
+    const allV=series.flatMap(s=>s.pts);
+    const minV=Math.min(0,...allV),maxV=Math.max(5,...allV);
+    const rng=maxV-minV||1;
+    const W=Math.max(canvas.parentElement.offsetWidth-8,200);
+    const H=240,PL=36,PR=16,PT=16,PB=30,pW=W-PL-PR,pH=H-PT-PB;
+    canvas.width=W;canvas.height=H;
+    canvas.style.width=W+'px';canvas.style.height=H+'px';
+    const ctx=canvas.getContext('2d');
+    ctx.clearRect(0,0,W,H);
+    const toY=v=>PT+pH*(1-(v-minV)/rng);
+    const toX=i=>numX<=1?PL+pW/2:PL+(pW/(numX-1))*i;
+    ctx.font='10px DM Sans,sans-serif';
+    for(let i=0;i<=5;i++){
+      const val=minV+(rng/5)*i,y=toY(val);
+      ctx.strokeStyle='rgba(255,255,255,0.07)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(PL,y);ctx.lineTo(PL+pW,y);ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,0.35)';ctx.textAlign='right';
+      ctx.fillText(Math.round(val),PL-5,y+3.5);
+    }
+    ctx.fillStyle='rgba(255,255,255,0.32)';ctx.textAlign='center';
+    for(let i=0;i<numX;i++) ctx.fillText(i===0?'Start':'R'+i,toX(i),H-10);
+    series.forEach(s=>{
+      const pts=s.pts.map((v,i)=>({x:toX(i),y:toY(v)}));
+      ctx.beginPath();ctx.strokeStyle=s.color;ctx.lineWidth=2.5;ctx.lineJoin='round';
+      pts.forEach((pt,i)=>i===0?ctx.moveTo(pt.x,pt.y):ctx.lineTo(pt.x,pt.y));
+      ctx.stroke();
+      pts.forEach(pt=>{ctx.beginPath();ctx.arc(pt.x,pt.y,3.5,0,Math.PI*2);ctx.fillStyle=s.color;ctx.fill();});
+    });
+    legend.innerHTML=series.map(s=>`<div class="leg-item"><div class="leg-dot" style="background:${s.color}"></div><span>${s.p.name}</span></div>`).join('');
+  });
+}
+
+function buildEndTable(){
+  document.getElementById('e-cols').innerHTML=
+    '<col style="width:44px">'+players.map(()=>'<col style="min-width:72px">').join('');
+  document.getElementById('e-head').innerHTML='<tr><th>Giv</th>'+
+    players.map(p=>`<th>${p.name}</th>`).join('')+'</tr>';
+  const body=document.getElementById('e-body');
+  body.innerHTML='';
+  rounds.forEach((round,ri)=>{
+    const afterTotal={};
+    players.forEach(p=>{afterTotal[p.id]=rounds.slice(0,ri+1).reduce((s,r)=>{const v=r.scores[p.id];return s+(v!==null&&v!==undefined?v:0);},0);});
+    const filled=players.filter(p=>{const v=round.scores[p.id];return v!==null&&v!==undefined;});
+    let ringVal=null;
+    if(filled.length>1){
+      const vals=filled.map(p=>afterTotal[p.id]);
+      ringVal=mode==='bygg'?Math.max(...vals):Math.min(...vals);
+    }
+    const dealer=dealerForRound(ri);
+    const tr=document.createElement('tr');
+    const giv=document.createElement('td');giv.className='etd-giv';giv.textContent=dealer?ini(dealer.name):'';tr.appendChild(giv);
+    players.forEach(p=>{
+      const td=document.createElement('td');
+      const s=round.scores[p.id],has=s!==null&&s!==undefined;
+      const isLo=has&&afterTotal[p.id]===ringVal&&filled.length>1;
+      const zeroKryp=mode==='kryp'&&has&&s===0;
+      td.className='etd-s'+(isLo?' lo':'');
+      if(has){
+        const sp=document.createElement('span');
+        sp.className='sv';
+        if(zeroKryp) sp.style.color='var(--green)';
+        sp.textContent=(s>0?'+':'')+s;
+        td.appendChild(sp);
+        if(round.detail&&round.detail[p.id]){
+          const d=round.detail[p.id];
+          const parts=[];
+          if(d.ess>0) parts.push(`${d.ess} ess`);
+          if(d.tabbar>0) parts.push(`${d.tabbar} tab${d.tabbar>1?'bar':''}`);
+          if(d.flestKort) parts.push('flest kort');
+          if(d.flestSpader) parts.push('flest spader');
+          if(d.lillan) parts.push('lillan');
+          if(d.storan) parts.push('storan');
+          if(parts.length){
+            const sub=document.createElement('div');
+            sub.style.cssText='font-size:8px;color:var(--tx3);line-height:1.2;margin-top:1px';
+            sub.textContent=parts.join(', ');
+            td.appendChild(sub);
+            td.style.height='54px';
+          }
+        }
+      } else{td.textContent='—';td.style.cssText='color:var(--tx3);font-size:12px';}
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+  calcTotals();
+  document.getElementById('e-foot').innerHTML='<tr><td class="elbl">Tot</td>'+
+    players.map(p=>`<td style="font-size:14px;font-weight:700;padding:10px 6px">${p.total}</td>`).join('')+'</tr>';
+}
+
+// ── NAV ──
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='s-setup'){
+    const tb=document.getElementById('setup-topbar');
+    if(tb&&!tb.querySelector('a')) tb.innerHTML='<a href="index.html" class="setup-back">← Alla spel</a>';
+  }
+  window.scrollTo(0,0);
+}
+function askAgain(){openDlg('d-again');}
+function againSame(){
+  closeDlg('d-again');
+  // Show mode re-select dialog before restarting
+  const byggBtn=document.getElementById('remode-bygg');
+  const krypBtn=document.getElementById('remode-kryp');
+  byggBtn.classList.toggle('on', mode==='bygg');
+  krypBtn.classList.toggle('on', mode==='kryp');
+  openDlg('d-remode');
+}
+function setRemode(m){
+  mode=m;
+  document.getElementById('remode-bygg').classList.toggle('on',m==='bygg');
+  document.getElementById('remode-kryp').classList.toggle('on',m==='kryp');
+}
+function confirmRemode(){
+  closeDlg('d-remode');
+  const names=players.map(p=>p.name);
+  players=names.map((n,i)=>({id:i,name:n,active:true,total:0}));
+  rounds=[];
+  const pill=document.getElementById('mode-pill');
+  pill.textContent=mode==='bygg'?'Bygg':'Kryp';
+  pill.className='mode-pill '+mode;
+  showScreen('s-game');
+  initFirstRound();
+}
+function againNew(){closeDlg('d-again');window.location.href='index.html';}
+function goHome(){window.location.href='index.html';}
+
+// First round — no auto-open of score sheet
+function initFirstRound(){
+  const scores={};
+  players.forEach(p=>{scores[p.id]=null;});
+  rounds.push({scores,dealerId:players[Math.floor(Math.random()*players.length)].id,detail:{}});
+  renderGame();
+}
+
+const origStart=startGame;
+window.startGame=function(){
+  const names=Array.from(document.querySelectorAll('#pfields .p-inp')).map(i=>i.value.trim()).filter(Boolean);
+  if(names.length<2){alert('Minst 2 spelare krävs.');return;}
+  players=names.map((name,i)=>({id:i,name,active:true,total:0}));
+  rounds=[];
+  const pill=document.getElementById('mode-pill');
+  pill.textContent=mode==='bygg'?'Bygg':'Kryp';
+  pill.className='mode-pill '+mode;
+  showScreen('s-game');
+  initFirstRound();
+};
+
+document.getElementById('pi-0').addEventListener('keydown',e=>{if(e.key==='Enter')addRow(0);});
+</script>
+</body>
+</html>
