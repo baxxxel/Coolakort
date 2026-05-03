@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kortspel</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0f0f11;--s1:#1a1a1f;--s2:#222228;--s3:#2c2c35;
+  --b1:rgba(255,255,255,0.08);--b2:rgba(255,255,255,0.15);
+  --tx:#f0ede8;--tx2:#9e9a94;--tx3:#55524e;
+  --gold:#e8c97a;--gold2:#c9a84c;
+  --red:#e05c5c;--blue:#5b9cf6;--green:#6bcf8a;
+  --r:14px;--rs:8px;
+}
+
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--tx);
+  min-height:100vh;
+  overscroll-behavior:none;
+  display:flex;
+  flex-direction:column;
+}
+
+/* ── PAGE LAYOUT ── */
+.page{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:0 1.25rem 4rem;
+  max-width:480px;
+  margin:0 auto;
+  width:100%;
+}
+
+/* ── HERO ── */
+.hero{
+  text-align:center;
+  padding:3rem 0 2.5rem;
+  width:100%;
+}
+
+.hero-badge{
+  display:inline-block;
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:2px;
+  color:var(--tx3);
+  font-weight:600;
+  margin-bottom:1rem;
+  border:1px solid var(--b1);
+  padding:4px 12px;
+  border-radius:99px;
+}
+
+.hero h1{
+  font-family:'DM Serif Display',serif;
+  font-size:52px;
+  color:var(--gold);
+  line-height:1;
+  margin-bottom:.75rem;
+}
+
+.hero p{
+  font-size:14px;
+  color:var(--tx2);
+  max-width:280px;
+  margin:0 auto;
+  line-height:1.55;
+}
+
+/* ── DIVIDER ── */
+.divider{
+  width:100%;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:1.5rem;
+}
+.divider-line{flex:1;height:1px;background:var(--b1)}
+.divider-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);font-weight:600;white-space:nowrap}
+
+/* ── GAME CARDS ── */
+.games{width:100%;display:flex;flex-direction:column;gap:12px}
+
+.game-card{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:18px 20px;
+  background:var(--s1);
+  border:1px solid var(--b1);
+  border-radius:var(--r);
+  text-decoration:none;
+  color:inherit;
+  transition:background .15s, border-color .15s, transform .1s;
+  position:relative;
+  overflow:hidden;
+}
+
+.game-card::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(135deg, rgba(232,201,122,0.04) 0%, transparent 60%);
+  opacity:0;
+  transition:opacity .2s;
+}
+
+.game-card:hover{
+  background:var(--s2);
+  border-color:var(--b2);
+}
+
+.game-card:hover::before{opacity:1}
+.game-card:active{transform:scale(.98)}
+
+.game-icon{
+  width:48px;height:48px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;flex-shrink:0;
+}
+
+.game-icon.gold{background:rgba(232,201,122,.1);border:1px solid rgba(232,201,122,.2)}
+.game-icon.blue{background:rgba(91,156,246,.1);border:1px solid rgba(91,156,246,.2)}
+.game-icon.green{background:rgba(107,207,138,.1);border:1px solid rgba(107,207,138,.2)}
+
+.game-info{flex:1;min-width:0}
+.game-title{font-size:17px;font-weight:600;color:var(--tx);margin-bottom:3px}
+.game-desc{font-size:12px;color:var(--tx3);line-height:1.4}
+
+.game-arrow{
+  font-size:18px;color:var(--tx3);flex-shrink:0;
+  transition:color .15s, transform .15s;
+}
+.game-card:hover .game-arrow{color:var(--gold);transform:translateX(3px)}
+
+/* Coming soon badge */
+.game-card.soon{opacity:.5;pointer-events:none}
+.soon-badge{
+  position:absolute;top:12px;right:12px;
+  font-size:9px;text-transform:uppercase;letter-spacing:1px;
+  background:var(--s2);color:var(--tx3);border:1px solid var(--b1);
+  padding:3px 8px;border-radius:99px;font-weight:600;
+}
+
+/* ── FOOTER ── */
+.footer{
+  margin-top:auto;
+  padding:2rem 1.25rem 1.5rem;
+  text-align:center;
+  font-size:11px;
+  color:var(--tx3);
+  letter-spacing:.3px;
+  width:100%;
+}
+
+/* ── STAGGER ANIMATION ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+.hero{animation:fadeUp .3s ease both}
+.divider{animation:fadeUp .3s .1s ease both}
+.game-card:nth-child(1){animation:fadeUp .3s .15s ease both}
+.game-card:nth-child(2){animation:fadeUp .3s .22s ease both}
+.game-card:nth-child(3){animation:fadeUp .3s .29s ease both}
+.game-card:nth-child(4){animation:fadeUp .3s .36s ease both}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hero">
+    <div class="hero-badge">Poängtavla</div>
+    <h1>Kortspel</h1>
+    <p>Välj ett spel för att starta en ny match och hålla koll på poängen.</p>
+  </div>
+
+  <div class="divider">
+    <div class="divider-line"></div>
+    <span class="divider-lbl">Välj spel</span>
+    <div class="divider-line"></div>
+  </div>
+
+  <div class="games">
+
+    <!-- Kille -->
+    <a class="game-card" href="kille.html">
+      <div class="game-icon gold">🃏</div>
+      <div class="game-info">
+        <div class="game-title">Kille</div>
+        <div class="game-desc">2+ spelare · Lägst poäng vinner · Spelar till max</div>
+      </div>
+      <span class="game-arrow">→</span>
+    </a>
+    <!-- Julia-Sjuan – coming soon -->
+    <div class="game-card soon">
+      <div class="game-icon blue">⑦</div>
+      <div class="game-info">
+        <div class="game-title">Julia-Sjuan</div>
+        <div class="game-desc">Kommer snart</div>
+      </div>
+      <span class="soon-badge">Snart</span>
+    </div>
+
+    <!-- Plump – coming soon -->
+    <div class="game-card soon">
+      <div class="game-icon blue">🎯</div>
+      <div class="game-info">
+        <div class="game-title">Plump</div>
+        <div class="game-desc">Kommer snart</div>
+      </div>
+      <span class="soon-badge">Snart</span>
+    </div>
+
+    <!-- Yatzy – coming soon -->
+    <div class="game-card soon">
+      <div class="game-icon green">🎲</div>
+      <div class="game-info">
+        <div class="game-title">Yatzy</div>
+        <div class="game-desc">Kommer snart</div>
+      </div>
+      <span class="soon-badge">Snart</span>
+    </div>
+
+    <!-- Kasta gris – coming soon -->
+    <div class="game-card soon">
+      <div class="game-icon gold">🐷</div>
+      <div class="game-info">
+        <div class="game-title">Kasta gris</div>
+        <div class="game-desc">Kommer snart</div>
+      </div>
+      <span class="soon-badge">Snart</span>
+    </div>
+
+    <!-- Spader dam – coming soon -->
+    <div class="game-card soon">
+      <div class="game-icon blue">♠️</div>
+      <div class="game-info">
+        <div class="game-title">Spader dam</div>
+        <div class="game-desc">Kommer snart</div>
+      </div>
+      <span class="soon-badge">Snart</span>
+    </div>
+
+    <!-- Casino – coming soon -->
+    <div class="game-card soon">
+      <div class="game-icon green">🂡</div>
+      <div class="game-info">
+        <div class="game-title">Casino</div>
+        <div class="game-desc">Kommer snart</div>
+      </div>
+      <span class="soon-badge">Snart</span>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="footer">Kortspel · Poängtavla</div>
+
+</body>
+</html>

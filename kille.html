@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kille</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0f0f11;--s1:#1a1a1f;--s2:#222228;--s3:#2c2c35;
+  --b1:rgba(255,255,255,0.08);--b2:rgba(255,255,255,0.15);
+  --tx:#f0ede8;--tx2:#9e9a94;--tx3:#55524e;
+  --gold:#e8c97a;--gold2:#c9a84c;
+  --red:#e05c5c;--redbg:rgba(224,92,92,0.12);
+  --blue:#5b9cf6;--green:#6bcf8a;--amber:#f0a84a;
+  --r:12px;--rs:8px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overscroll-behavior:none}
+.screen{display:none}.screen.active{display:block}
+
+/* ── SETUP ── */
+#s-setup{padding:0 1.25rem 5rem;max-width:480px;margin:0 auto}
+.setup-topbar{padding:1rem 0 0}
+.setup-back{font-size:13px;color:var(--tx3);text-decoration:none;font-weight:500;transition:color .15s;display:inline-block;padding:4px 0}
+.setup-back:hover{color:var(--gold)}
+.hero{text-align:center;margin-bottom:2.5rem;padding-top:1.5rem}
+.hero h1{font-family:'DM Serif Display',serif;font-size:56px;color:var(--gold);line-height:1}
+.hero p{font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:1.5px;margin-top:6px}
+.sec-lbl{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--tx3);font-weight:600;margin-bottom:10px}
+.setup-sec{margin-bottom:2rem}
+.p-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;animation:fadeUp .18s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+.p-num{width:28px;height:28px;border-radius:50%;background:var(--s2);border:1px solid var(--b2);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--tx2);font-weight:600;flex-shrink:0}
+input[type=text],input[type=number]{background:var(--s1);border:1px solid var(--b1);border-radius:var(--rs);color:var(--tx);font-family:'DM Sans',sans-serif;font-size:15px;padding:10px 14px;transition:border-color .15s;-webkit-appearance:none;appearance:none;width:100%}
+input:focus{outline:none;border-color:var(--gold2)}
+input::placeholder{color:var(--tx3)}
+.p-inp{flex:1;width:auto}
+.btn-add{height:42px;padding:0 16px;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);color:var(--gold);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.btn-add:active{background:var(--s3)}
+.lim-opts{display:flex;gap:8px;margin-bottom:10px}
+.l-opt{flex:1;padding:10px 4px;background:var(--s1);border:1px solid var(--b1);border-radius:var(--rs);color:var(--tx2);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s}
+.l-opt.on{background:var(--gold);color:#1a1200;border-color:var(--gold)}
+.lim-custom{display:none;margin-top:6px}.lim-custom.show{display:block}
+.btn-start{width:100%;padding:14px;background:var(--gold);color:#1a1200;border:none;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;cursor:pointer;margin-top:1rem}
+.btn-start:active{opacity:.85}
+
+/* ── GAME TOPBAR ── */
+#s-game{padding-bottom:5rem}
+.topbar{display:flex;align-items:center;gap:10px;padding:.85rem 1rem .7rem;border-bottom:1px solid var(--b1);position:sticky;top:0;background:var(--bg);z-index:30}
+.topbar-title{font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold);flex:1}
+.lim-pill{font-size:11px;color:var(--tx3);background:var(--s2);padding:4px 10px;border-radius:99px;border:1px solid var(--b1);white-space:nowrap}
+.btn-end-game{background:none;border:1px solid rgba(224,92,92,.4);color:var(--red);border-radius:var(--rs);padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer}
+.topbar-home{color:var(--tx2);font-size:20px;text-decoration:none;line-height:1;padding:4px 8px 4px 0;transition:color .15s}
+.topbar-home:hover{color:var(--gold)}
+
+/* ── SCORE TABLE ──
+   We use a scrollable wrapper + a plain <table>.
+   NO table-layout:fixed (causes collapse on mobile).
+   NO width:max-content on the table itself.
+   Each column gets a min-width via colgroup.
+*/
+.tbl-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%}
+
+#gtbl{
+  border-collapse:collapse;
+  /* Let the table size itself naturally */
+  width:100%;
+}
+
+/* colgroup widths are set dynamically in JS */
+
+/* Header */
+#gtbl thead th{
+  background:var(--s1);
+  border-bottom:2px solid var(--b2);
+  padding:10px 8px;
+  text-align:center;
+  white-space:nowrap;
+  font-size:11px;
+}
+.th-giv{
+  width:48px;
+  min-width:48px;
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  color:var(--tx3);
+  font-weight:600;
+}
+.th-p{
+  min-width:80px;
+  cursor:pointer;
+  user-select:none;
+}
+.th-p:active{background:var(--s2) !important}
+.th-p.inactive .ph-ini,.th-p.inactive .ph-name{color:var(--tx3);opacity:.5}
+.ph-ini{display:block;font-size:13px;font-weight:600;color:var(--tx);line-height:1.2}
+.ph-name{display:block;font-size:10px;color:var(--tx2);margin-top:2px}
+
+/* Body rows */
+#gtbl tbody tr{border-bottom:1px solid var(--b1)}
+#gtbl tbody tr.cur-row{background:rgba(232,201,122,.05)}
+
+/* Dealer cell */
+.td-giv{
+  width:48px;
+  min-width:48px;
+  text-align:center;
+  vertical-align:middle;
+  font-size:11px;
+  font-weight:700;
+  color:var(--tx3);
+  padding:0 4px;
+  letter-spacing:.3px;
+}
+
+/* Score cells */
+.td-s{
+  min-width:80px;
+  height:56px;
+  text-align:center;
+  vertical-align:middle;
+  border-left:1px solid var(--b1);
+  padding:0;
+}
+/* Tappable (active, editable) */
+.td-s.tap{
+  cursor:pointer;
+  background:var(--s1); /* slight contrast so it looks like a button */
+}
+.td-s.tap:hover{background:var(--s2)}
+.td-s.tap:active{background:var(--s3)}
+/* Inactive/removed player */
+.td-s.gone{
+  cursor:default;
+  opacity:.32;
+  background:repeating-linear-gradient(45deg,transparent,transparent 5px,rgba(255,255,255,.025) 5px,rgba(255,255,255,.025) 10px);
+}
+/* Old locked row */
+.td-s.locked{cursor:default}
+
+/* Score text */
+.sv{display:inline-block;font-size:18px;font-weight:600;color:var(--tx)}
+.sv.neg{color:var(--red)}
+.sv.dlr{font-weight:800}
+
+/* Lowest cumulative total: blue ring only, text color unchanged */
+.td-s.lo{position:relative}
+.td-s.lo .sv{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:36px;height:36px;border-radius:50%;
+  border:2px solid var(--blue);
+  font-size:14px;font-weight:600;
+  /* color is NOT overridden here — inherits .sv or .sv.neg */
+}
+
+/* Empty dot placeholder */
+.edot{color:var(--tx3);font-size:22px;line-height:1}
+
+/* Footer */
+#gtbl tfoot td{
+  background:var(--s1);
+  border-top:2px solid var(--b2);
+  font-size:14px;
+  font-weight:700;
+  padding:10px 4px;
+  text-align:center;
+}
+.td-tot-lbl{font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.losing{color:var(--red)}
+.gone-tot{color:var(--tx3)}
+
+/* ── PICKER SHEET ── */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.ov.open{display:flex}
+.sheet{background:var(--s1);border-radius:20px 20px 0 0;padding:1rem 1rem 2.5rem;width:100%;max-width:500px;border-top:1px solid var(--b2);animation:shUp .2s ease}
+@keyframes shUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sh-handle{width:36px;height:4px;background:var(--b2);border-radius:2px;margin:0 auto 1rem}
+.sh-title{font-size:13px;color:var(--tx2);text-align:center;margin-bottom:14px;font-weight:500}
+.pick-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.pick-btn{height:52px;background:var(--s2);border:1px solid var(--b1);border-radius:var(--rs);color:var(--tx);font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;cursor:pointer}
+.pick-btn:active{background:var(--s3);transform:scale(.92)}
+.pick-btn.neg{color:var(--red)}
+.sh-cancel{width:100%;margin-top:14px;padding:10px;background:none;border:none;color:var(--tx2);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer}
+
+/* ── DIALOGS ── */
+.dlg-ov{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:200;display:none;align-items:center;justify-content:center;padding:1.5rem;backdrop-filter:blur(3px)}
+.dlg-ov.open{display:flex}
+.dlg{background:var(--s1);border-radius:var(--r);padding:1.75rem 1.5rem;width:100%;max-width:340px;border:1px solid var(--b2);animation:dlgIn .16s ease}
+@keyframes dlgIn{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
+.dlg h3{font-family:'DM Serif Display',serif;font-size:24px;color:var(--tx);margin-bottom:8px}
+.dlg p{font-size:14px;color:var(--tx2);line-height:1.55;margin-bottom:1.5rem}
+.dlg-btns{display:flex;gap:10px}
+.dlg-btns button{flex:1;padding:12px;border-radius:var(--rs);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--b2)}
+.dlg-btns button:active{transform:scale(.97)}
+.btn-no{background:none;color:var(--tx)}
+.btn-danger{background:var(--red);color:#fff;border-color:var(--red)}
+.btn-cont{background:var(--s2);color:var(--tx)}
+.btn-go{background:var(--gold);color:#1a1200;border-color:var(--gold)}
+.warn-list{margin-bottom:1.5rem}
+.warn-row{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-radius:var(--rs);background:var(--s2);border:1px solid var(--b1);margin-bottom:6px}
+.warn-name{font-size:14px;font-weight:500;color:var(--tx)}
+.warn-pts{font-size:13px;font-weight:700;color:var(--amber)}
+.loser-hi{font-size:16px;font-weight:700;color:var(--red);margin-bottom:6px}
+
+/* ── END SCREEN ── */
+#s-end{max-width:480px;margin:0 auto;padding:0 0 5rem}
+.end-hero{text-align:center;padding:2rem 1.25rem 1.5rem}
+.end-hero h1{font-family:'DM Serif Display',serif;font-size:38px;color:var(--gold)}
+.end-sec{padding:0 1.25rem;margin-bottom:1.5rem}
+.end-sec-lbl{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--tx3);font-weight:600;margin-bottom:10px}
+
+/* Podium wrapper */
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;height:210px;padding:0 1.25rem;margin-bottom:2rem}
+.p-slot{flex:1;max-width:115px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.p-info{text-align:center;margin-bottom:8px;padding:0 4px}
+.p-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;margin:0 auto 6px}
+
+/* Podium: DOM order is 2nd | 1st | 3rd so center is tallest visually
+   Heights are STATIC and don't reflect scores */
+.p-slot:nth-child(1) .p-avatar{background:rgba(91,156,246,.15);color:var(--blue);border:2px solid var(--blue)}
+.p-slot:nth-child(2) .p-avatar{background:rgba(232,201,122,.18);color:var(--gold);border:2px solid var(--gold)}
+.p-slot:nth-child(3) .p-avatar{background:rgba(107,207,138,.12);color:var(--green);border:1px solid var(--green)}
+.p-name{font-size:13px;font-weight:600;color:var(--tx);word-break:break-word}
+.p-pts{font-size:12px;color:var(--tx2);margin-top:2px}.p-pts.neg{color:var(--red)}
+.p-block{width:100%;border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center}
+.p-place{font-family:'DM Serif Display',serif;font-size:30px}
+/* slot 1 = 2nd place, medium height */
+.p-slot:nth-child(1) .p-block{height:105px;background:linear-gradient(180deg,rgba(91,156,246,.18),rgba(91,156,246,.05));border:1px solid rgba(91,156,246,.25)}
+.p-slot:nth-child(1) .p-place{color:var(--blue)}
+/* slot 2 = 1st place, tallest */
+.p-slot:nth-child(2) .p-block{height:148px;background:linear-gradient(180deg,rgba(232,201,122,.22),rgba(232,201,122,.06));border:1px solid rgba(232,201,122,.3)}
+.p-slot:nth-child(2) .p-place{color:var(--gold)}
+/* slot 3 = 3rd place, shortest */
+.p-slot:nth-child(3) .p-block{height:72px;background:linear-gradient(180deg,rgba(107,207,138,.14),rgba(107,207,138,.04));border:1px solid rgba(107,207,138,.2)}
+.p-slot:nth-child(3) .p-place{color:var(--green)}
+
+.remain-row{display:flex;align-items:center;padding:12px 16px;background:var(--s1);border:1px solid var(--b1);border-radius:var(--rs);margin-bottom:6px}
+.remain-rank{font-size:12px;color:var(--tx3);font-weight:700;width:22px}
+.remain-name{flex:1;font-size:15px;font-weight:500;color:var(--tx);margin-left:10px}
+.remain-pts{font-size:15px;font-weight:700;color:var(--tx2)}.remain-pts.neg{color:var(--red)}
+
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px 14px 12px}
+.stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--tx3);font-weight:600;margin-bottom:6px}
+.stat-val{font-size:20px;font-weight:700;color:var(--tx);line-height:1.15}
+.stat-sub{font-size:11px;color:var(--tx2);margin-top:3px}
+.stat-val.gold{color:var(--gold)}.stat-val.red{color:var(--red)}.stat-val.blue{color:var(--blue)}
+
+.chart-box{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px 12px 12px;overflow:hidden}
+#score-chart{display:block;width:100%}
+.chart-legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:12px}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2)}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+#etbl{border-collapse:collapse;width:100%}
+#etbl th{background:var(--s1);padding:8px 8px;font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--b2);text-align:center;white-space:nowrap}
+#etbl td{text-align:center;vertical-align:middle;border-bottom:1px solid var(--b1)}
+#etbl .etd-giv{width:44px;font-size:11px;font-weight:700;color:var(--tx3);padding:0 6px;height:44px}
+#etbl .etd-s{height:44px;min-width:72px;border-left:1px solid var(--b1)}
+#etbl tfoot td{background:var(--s1);font-size:14px;font-weight:700;padding:10px 6px;border-top:1px solid var(--b2)}
+#etbl tfoot .elbl{font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+
+.end-btns{padding:0 1.25rem;display:flex;flex-direction:column;gap:10px}
+.btn-again{width:100%;padding:14px;background:var(--gold);color:#1a1200;border:none;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;cursor:pointer}
+.btn-again:active{opacity:.85}
+.btn-quit{width:100%;padding:13px;background:none;border:1px solid var(--b2);border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;color:var(--tx2);cursor:pointer}
+.btn-quit:active{background:var(--s2)}
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="s-setup" class="screen active">
+  <div class="setup-topbar" id="setup-topbar">
+    <a href="index.html" class="setup-back">← Alla spel</a>
+  </div>
+  <div class="hero"><h1>Kille</h1><p>Kortspel · Poängtavla</p></div>
+  <div class="setup-sec">
+    <div class="sec-lbl">Spelare</div>
+    <div id="pfields">
+      <div class="p-row" id="prow-0">
+        <div class="p-num">1</div>
+        <input class="p-inp" type="text" id="pi-0" placeholder="Spelare 1" maxlength="28">
+        <button class="btn-add" onclick="addRow(0)">Lägg till</button>
+      </div>
+    </div>
+  </div>
+  <div class="setup-sec">
+    <div class="sec-lbl">Maxpoäng</div>
+    <div class="lim-opts">
+      <button class="l-opt" onclick="setLim(50,this)">50</button>
+      <button class="l-opt" onclick="setLim(80,this)">80</button>
+      <button class="l-opt on" onclick="setLim(100,this)">100</button>
+      <button class="l-opt" onclick="setLim('c',this)">Annat</button>
+    </div>
+    <div class="lim-custom" id="lim-cust">
+      <input type="number" id="lim-inp" placeholder="Ange maxpoäng…" min="5" max="9999">
+    </div>
+  </div>
+  <button class="btn-start" onclick="startGame()">Starta match</button>
+</div>
+
+<!-- GAME -->
+<div id="s-game" class="screen">
+  <div class="topbar">
+    <a href="index.html" class="topbar-home" title="Hem">&#8592;</a>
+    <span class="topbar-title">Kille</span>
+    <span class="lim-pill" id="lim-pill"></span>
+    <button class="btn-end-game" onclick="openDlg('d-endconf')">Avsluta</button>
+  </div>
+  <div class="tbl-outer">
+    <table id="gtbl">
+      <colgroup id="g-cols"></colgroup>
+      <thead id="g-head"></thead>
+      <tbody id="g-body"></tbody>
+      <tfoot id="g-foot"></tfoot>
+    </table>
+  </div>
+</div>
+
+<!-- END -->
+<div id="s-end" class="screen">
+  <div class="end-hero"><h1>Matchen slut</h1></div>
+  <div class="podium" id="e-podium"></div>
+  <div class="end-sec" id="e-remaining"></div>
+  <div class="end-sec"><div class="end-sec-lbl">Matchstatistik</div><div class="stats-grid" id="e-stats"></div></div>
+  <div class="end-sec">
+    <div class="end-sec-lbl">Poängutveckling</div>
+    <div class="chart-box"><canvas id="score-chart"></canvas><div class="chart-legend" id="e-legend"></div></div>
+  </div>
+  <div class="end-sec">
+    <div class="end-sec-lbl">Alla rundor</div>
+    <div class="tbl-outer"><table id="etbl"><colgroup id="e-cols"></colgroup><thead id="e-head"></thead><tbody id="e-body"></tbody><tfoot id="e-foot"></tfoot></table></div>
+  </div>
+  <div class="end-btns">
+    <button class="btn-again" onclick="askAgain()">Spela igen</button>
+    <button class="btn-quit" onclick="goHome()">Avsluta</button>
+  </div>
+</div>
+
+<!-- PICKER -->
+<div class="ov" id="ov-picker" onclick="if(event.target===this)closePicker()">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="pick-title">Välj poäng</div>
+    <div class="pick-grid" id="pick-grid"></div>
+    <button class="sh-cancel" onclick="closePicker()">Avbryt</button>
+  </div>
+</div>
+
+<!-- DIALOG: Avsluta -->
+<div class="dlg-ov" id="d-endconf">
+  <div class="dlg">
+    <h3>Avsluta spelet?</h3>
+    <p>Är du säker? Matchen avslutas och resultatet visas.</p>
+    <div class="dlg-btns">
+      <button class="btn-no" onclick="closeDlg('d-endconf')">Avbryt</button>
+      <button class="btn-danger" onclick="endGame()">Ja, avsluta</button>
+    </div>
+  </div>
+</div>
+
+<!-- DIALOG: Varning -->
+<div class="dlg-ov" id="d-warn">
+  <div class="dlg">
+    <h3>⚠ Varning</h3>
+    <p style="margin-bottom:12px">Dessa spelare riskerar att förlora nästa runda:</p>
+    <div class="warn-list" id="d-warn-list"></div>
+    <div class="dlg-btns"><button class="btn-go" onclick="warnOk()">Förstått</button></div>
+  </div>
+</div>
+
+<!-- DIALOG: Förlorare -->
+<div class="dlg-ov" id="d-loser">
+  <div class="dlg">
+    <h3>Maxpoäng uppnådd!</h3>
+    <div class="loser-hi" id="d-loser-names"></div>
+    <p>har nått maxpoängen. Vill ni fortsätta spela?</p>
+    <div class="dlg-btns">
+      <button class="btn-cont" onclick="continuePlay()">Fortsätt</button>
+      <button class="btn-go" onclick="endGame()">Avsluta</button>
+    </div>
+  </div>
+</div>
+
+<!-- DIALOG: Ge upp 1 -->
+<div class="dlg-ov" id="d-gu1">
+  <div class="dlg">
+    <h3>Ge upp?</h3>
+    <p id="d-gu1-txt"></p>
+    <div class="dlg-btns">
+      <button class="btn-no" onclick="closeDlg('d-gu1')">Avbryt</button>
+      <button class="btn-danger" onclick="gu2()">Ge upp</button>
+    </div>
+  </div>
+</div>
+
+<!-- DIALOG: Ge upp 2 -->
+<div class="dlg-ov" id="d-gu2">
+  <div class="dlg">
+    <h3>Är du säker?</h3>
+    <p>Det går inte att ångra. Spelaren gråas ut och inga fler poäng läggs till.</p>
+    <div class="dlg-btns">
+      <button class="btn-no" onclick="closeDlg('d-gu2')">Avbryt</button>
+      <button class="btn-danger" onclick="doGiveUp()">Ja, ge upp</button>
+    </div>
+  </div>
+</div>
+
+<!-- DIALOG: Spela igen -->
+<div class="dlg-ov" id="d-again">
+  <div class="dlg">
+    <h3>Spela igen?</h3>
+    <p>Vill ni spela med samma deltagare eller börja om med nya namn?</p>
+    <div class="dlg-btns" style="flex-direction:column;gap:8px">
+      <button class="btn-go" onclick="againSame()">Samma deltagare</button>
+      <button class="btn-no" style="border:1px solid var(--b2)" onclick="againNew()">Nya spelare</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const VALS = [-3,-2,-1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18];
+const CHART_COLORS = ['#e8c97a','#5b9cf6','#6bcf8a','#e05c5c','#c47ef5','#f0a84a','#5dd8d8','#f57eb6'];
+
+let players   = [];
+let rounds    = [];
+let limit     = 100;
+let rowCount  = 1;
+let selLim    = 100;
+let customLim = false;
+let pickState = null;
+let giveUpId  = null;
+let pendingNext = false;
+
+/* ─ SETUP ─ */
+function setLim(v, btn) {
+  document.querySelectorAll('.l-opt').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const cw = document.getElementById('lim-cust');
+  if (v === 'c') { customLim = true; cw.classList.add('show'); document.getElementById('lim-inp').focus(); }
+  else { customLim = false; selLim = v; cw.classList.remove('show'); }
+}
+
+function addRow(fromIdx) {
+  const inp = document.getElementById('pi-' + fromIdx);
+  if (!inp.value.trim()) { inp.focus(); return; }
+  inp.parentElement.querySelector('.btn-add').style.display = 'none';
+  const ni = rowCount++;
+  const div = document.createElement('div');
+  div.className = 'p-row'; div.id = 'prow-' + ni;
+  div.innerHTML = `<div class="p-num">${ni+1}</div>
+    <input class="p-inp" type="text" id="pi-${ni}" placeholder="Spelare ${ni+1}" maxlength="28">
+    <button class="btn-add" onclick="addRow(${ni})">Lägg till</button>`;
+  document.getElementById('pfields').appendChild(div);
+  const newInp = div.querySelector('input');
+  newInp.addEventListener('keydown', e => { if (e.key==='Enter') addRow(ni); });
+  newInp.focus();
+}
+
+function startGame() {
+  if (customLim) {
+    const cv = parseInt(document.getElementById('lim-inp').value);
+    if (!cv || cv < 1) { alert('Ange ett giltigt maxpoäng.'); return; }
+    limit = cv;
+  } else { limit = selLim; }
+
+  const names = Array.from(document.querySelectorAll('#pfields .p-inp'))
+                     .map(i => i.value.trim()).filter(Boolean);
+  if (names.length < 2) { alert('Minst 2 spelare krävs.'); return; }
+
+  players = names.map((name, i) => ({ id:i, name, active:true, total:0 }));
+  rounds  = [];
+  pendingNext = false;
+
+  const startDealer = players[Math.floor(Math.random() * players.length)].id;
+  addRound(startDealer);
+
+  document.getElementById('lim-pill').textContent = 'Max ' + limit + ' p';
+  showScreen('s-game');
+  renderGame();
+}
+
+/* ─ ROUNDS ─ */
+function addRound(dealerId) {
+  const sc = {};
+  players.forEach(p => { sc[p.id] = null; });
+  rounds.push({ scores: sc, dealerId });
+}
+
+function dealerForRound(ri) {
+  const active = players.filter(p => p.active);
+  if (!active.length) return null;
+  const firstId = rounds[0].dealerId;
+  const base    = active.findIndex(p => p.id === firstId);
+  return active[(base >= 0 ? base : 0) + ri >= 0 ? ((base >= 0 ? base : 0) + ri) % active.length : 0];
+}
+
+function calcTotals() {
+  players.forEach(p => {
+    p.total = rounds.reduce((s, r) => s + (r.scores[p.id] ?? 0), 0);
+  });
+}
+
+function ini(name) {
+  return name.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0,2);
+}
+
+/* ─ RENDER ─ */
+function renderGame() {
+  calcTotals();
+
+  const nPlayers = players.length;
+
+  /* Colgroup: first col narrow (dealer), rest equal */
+  const cg = document.getElementById('g-cols');
+  cg.innerHTML = '<col style="width:48px">' + players.map(() => '<col style="min-width:80px">').join('');
+
+  /* HEAD */
+  let hh = '<tr><th class="th-giv">Giv</th>';
+  players.forEach(p => {
+    hh += `<th class="th-p${p.active?'':' inactive'}" onclick="openGU1(${p.id})">
+      <span class="ph-ini">${ini(p.name)}</span>
+      <span class="ph-name">${p.name}</span>
+    </th>`;
+  });
+  hh += '</tr>';
+  document.getElementById('g-head').innerHTML = hh;
+
+  /* BODY */
+  const tbody   = document.getElementById('g-body');
+  tbody.innerHTML = '';
+  const lastRi  = rounds.length - 1;
+  const prevRi  = rounds.length - 2;
+
+  rounds.forEach((round, ri) => {
+    const dealer   = dealerForRound(ri);
+    const isCur    = ri === lastRi;
+    const editable = ri === lastRi || ri === prevRi;
+
+    /* Lowest cumulative total: only highlight in the current round being played */
+    const filledPlayers = players.filter(p => {
+      const v = round.scores[p.id];
+      return v !== null && v !== undefined;
+    });
+    const minTotal = isCur && filledPlayers.length > 1
+      ? Math.min(...filledPlayers.map(p => p.total))
+      : null;
+
+    const tr = document.createElement('tr');
+    if (isCur) tr.classList.add('cur-row');
+
+    /* Dealer cell */
+    const giv = document.createElement('td');
+    giv.className   = 'td-giv';
+    giv.textContent = dealer ? ini(dealer.name) : '';
+    tr.appendChild(giv);
+
+    players.forEach(p => {
+      const score  = round.scores[p.id];
+      const has    = score !== null && score !== undefined;
+      const isLo   = has && p.total === minTotal && filledPlayers.length > 1;
+      const isDlr  = dealer && p.id === dealer.id;
+      const canEdit= editable && p.active;
+      const gone   = !p.active;
+
+      const td = document.createElement('td');
+      td.className = 'td-s ' + (gone ? 'gone' : canEdit ? 'tap' : 'locked') + (isLo ? ' lo' : '');
+
+      if (canEdit) {
+        (function(roundIdx, playerId) {
+          td.onclick = function() { openPicker(roundIdx, playerId); };
+        })(ri, p.id);
+      }
+
+      if (has) {
+        const sp = document.createElement('span');
+        sp.className = 'sv' + (score < 0 ? ' neg' : '') + (isDlr ? ' dlr' : '');
+        sp.textContent = (score > 0 ? '+' : '') + score;
+        td.appendChild(sp);
+      } else if (isCur && p.active) {
+        const dot = document.createElement('span');
+        dot.className = 'edot';
+        dot.textContent = '·';
+        td.appendChild(dot);
+      }
+
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+
+  /* FOOT */
+  let ft = '<tr><td class="td-tot-lbl">Tot</td>';
+  players.forEach(p => {
+    const cls = p.total > limit ? ' losing' : !p.active ? ' gone-tot' : '';
+    ft += `<td class="${cls}">${p.total}</td>`;
+  });
+  ft += '</tr>';
+  document.getElementById('g-foot').innerHTML = ft;
+}
+
+/* ─ PICKER ─ */
+function openPicker(ri, pid) {
+  pickState = { ri, pid };
+  const p = players.find(x => x.id === pid);
+  document.getElementById('pick-title').textContent = p.name + ' – Välj poäng';
+  const grid = document.getElementById('pick-grid');
+  grid.innerHTML = '';
+  VALS.forEach(v => {
+    const btn = document.createElement('button');
+    btn.className = 'pick-btn' + (v < 0 ? ' neg' : '');
+    btn.textContent = (v > 0 ? '+' : '') + v;
+    (function(val){ btn.onclick = function(){ selectScore(val); }; })(v);
+    grid.appendChild(btn);
+  });
+  document.getElementById('ov-picker').classList.add('open');
+}
+
+function selectScore(val) {
+  if (!pickState) return;
+  const { ri, pid } = pickState;
+  rounds[ri].scores[pid] = val;
+  pickState = null;
+  document.getElementById('ov-picker').classList.remove('open');
+  calcTotals();
+  renderGame();
+
+  /* Auto-advance: find next unfilled active player in this round, in seat order */
+  const active = players.filter(p => p.active);
+  const round  = rounds[ri];
+  /* Start searching from the player AFTER the one we just filled */
+  const justFilledIdx = active.findIndex(p => p.id === pid);
+  /* Try players after, then wrap around to start */
+  const ordered = [
+    ...active.slice(justFilledIdx + 1),
+    ...active.slice(0, justFilledIdx)
+  ];
+  const nextP = ordered.find(p => {
+    const v = round.scores[p.id];
+    return v === null || v === undefined;
+  });
+
+  if (nextP) {
+    /* Small delay so the table re-renders visibly before picker opens */
+    setTimeout(() => openPicker(ri, nextP.id), 80);
+  } else {
+    checkRowComplete(ri);
+  }
+}
+
+function closePicker() {
+  document.getElementById('ov-picker').classList.remove('open');
+  pickState = null;
+}
+
+/* ─ ROW COMPLETE CHECK ─ */
+function checkRowComplete(ri) {
+  const active = players.filter(p => p.active);
+  const allFilled = active.every(p => {
+    const v = rounds[ri].scores[p.id];
+    return v !== null && v !== undefined;
+  });
+  if (!allFilled) return;
+
+  calcTotals();
+
+  /* 1. Losers (highest score wins, golf rules — lowest WINS, highest LOSES) */
+  const losers = active.filter(p => p.total > limit);
+  if (losers.length) {
+    document.getElementById('d-loser-names').textContent = losers.map(p => p.name).join(', ');
+    openDlg('d-loser');
+    return;
+  }
+
+  /* 2. Risk warning */
+  const atRisk = active.filter(p => {
+    const rem = limit - p.total;
+    return rem > 0 && rem <= 18;
+  });
+  if (atRisk.length) {
+    document.getElementById('d-warn-list').innerHTML = atRisk.map(p =>
+      `<div class="warn-row">
+        <span class="warn-name">${p.name}</span>
+        <span class="warn-pts">max +${limit - p.total} p</span>
+      </div>`).join('');
+    pendingNext = true;
+    openDlg('d-warn');
+    return;
+  }
+
+  doNextRound();
+}
+
+function warnOk() {
+  closeDlg('d-warn');
+  if (pendingNext) { pendingNext = false; doNextRound(); }
+}
+
+function doNextRound() {
+  const ri    = rounds.length;
+  const dlr   = dealerForRound(ri);
+  addRound(dlr ? dlr.id : rounds[0].dealerId);
+  renderGame();
+}
+
+function continuePlay() { closeDlg('d-loser'); doNextRound(); }
+
+/* ─ GIVE UP ─ */
+function openGU1(pid) {
+  if (!players.find(p => p.id === pid)?.active) return;
+  giveUpId = pid;
+  const p = players.find(x => x.id === pid);
+  document.getElementById('d-gu1-txt').innerHTML =
+    `Vill du ta bort <strong>${p.name}</strong> från matchen? Historiken behålls men inga fler poäng läggs till.`;
+  openDlg('d-gu1');
+}
+function gu2() { closeDlg('d-gu1'); openDlg('d-gu2'); }
+function doGiveUp() {
+  closeDlg('d-gu2');
+  if (giveUpId === null) return;
+  players.find(x => x.id === giveUpId).active = false;
+  giveUpId = null;
+  calcTotals();
+  renderGame();
+}
+
+/* ─ DIALOGS ─ */
+function openDlg(id)  { document.getElementById(id).classList.add('open'); }
+function closeDlg(id) { document.getElementById(id).classList.remove('open'); }
+
+/* ─ END GAME ─ */
+function endGame() {
+  closeDlg('d-endconf'); closeDlg('d-loser');
+  calcTotals();
+  buildEnd();
+  showScreen('s-end');
+}
+
+function buildEnd() {
+  /* Sort: LOWEST total first (golf rules – lowest wins) */
+  const sorted = [...players].sort((a, b) => a.total - b.total);
+  buildPodium(sorted);
+  buildRemaining(sorted);
+  buildStats(sorted);
+  buildChart();
+  buildEndTable();
+}
+
+/* Podium: 1st (lowest) center, 2nd left, 3rd right
+   DOM order: 2nd | 1st | 3rd  (CSS nth-child handles heights)
+   But here we want 1st = winner = lowest score.
+*/
+function buildPodium(sorted) {
+  const pod = document.getElementById('e-podium');
+  pod.innerHTML = '';
+  /* Visual: slot 0 = 1st place (center/tallest), slot 1 = 2nd, slot 2 = 3rd
+     But flex order: put 2nd left, 1st center, 3rd right via DOM order 2nd,1st,3rd */
+  const visual = [sorted[1]||null, sorted[0]||null, sorted[2]||null];
+  const labels = [2, 1, 3];
+  visual.forEach((p, si) => {
+    const slot = document.createElement('div');
+    slot.className = 'p-slot';
+    if (!p) { pod.appendChild(slot); return; }
+    slot.innerHTML = `
+      <div class="p-info">
+        <div class="p-avatar">${ini(p.name)}</div>
+        <div class="p-name">${p.name}</div>
+        <div class="p-pts${p.total<0?' neg':''}">${p.total} p</div>
+      </div>
+      <div class="p-block"><span class="p-place">${labels[si]}</span></div>`;
+    pod.appendChild(slot);
+  });
+}
+
+function buildRemaining(sorted) {
+  const sec = document.getElementById('e-remaining');
+  if (sorted.length <= 3) { sec.innerHTML=''; return; }
+  sec.innerHTML = '<div class="end-sec-lbl">Övriga</div>' +
+    sorted.slice(3).map((p, i) =>
+      `<div class="remain-row">
+        <span class="remain-rank">${i+4}</span>
+        <span class="remain-name">${p.name}</span>
+        <span class="remain-pts${p.total<0?' neg':''}">${p.total} p</span>
+      </div>`).join('');
+}
+
+function buildStats(sorted) {
+  const done = rounds.filter(r =>
+    players.filter(p=>p.active).every(p => r.scores[p.id]!==null && r.scores[p.id]!==undefined)
+  );
+
+  /* Highest single round score */
+  let highScore=-Infinity, highP=null, highR=-1;
+  done.forEach((r,ri) => players.forEach(p => {
+    const v = r.scores[p.id];
+    if (v!==null && v!==undefined && v>highScore) { highScore=v; highP=p; highR=ri+1; }
+  }));
+
+  /* Most minus rounds */
+  const minus={};
+  players.forEach(p => { minus[p.id]=0; });
+  done.forEach(r => players.forEach(p => { if ((r.scores[p.id]??1)<0) minus[p.id]++; }));
+  const maxM = Math.max(...Object.values(minus));
+  const mostM = players.filter(p => minus[p.id]===maxM && maxM>0);
+
+  /* Winner = lowest total, loser = highest total */
+  const winner = sorted[0];
+  const loser  = sorted[sorted.length-1];
+  const ratio  = loser.total>0 && winner.total>0
+    ? (loser.total/winner.total).toFixed(1)+'x' : '–';
+  const avgW   = done.length ? (winner.total/done.length).toFixed(1) : '–';
+
+  document.getElementById('e-stats').innerHTML = [
+    {lbl:'Högsta poäng en runda',       val: highP?'+'+highScore:'–',  sub: highP?highP.name+', runda '+highR:'', cls:'gold'},
+    {lbl:'Flest minusrundor',            val: maxM>0?maxM:0,            sub: mostM.length?mostM.map(p=>p.name).join(', '):'Ingen', cls:maxM>0?'red':''},
+    {lbl:'Förlorarens vs vinnaren',      val: ratio,                    sub: loser.name+' vs '+winner.name, cls:'blue'},
+    {lbl:'Antal rundor',                 val: done.length,              sub: '', cls:''},
+    {lbl:'Snitt per runda (vinnare)',    val: avgW,                     sub: winner.name, cls:''},
+    {lbl:'Lägst total (vinnare)',        val: winner.total+' p',        sub: winner.name, cls:'gold'},
+  ].map(c => `<div class="stat-card">
+    <div class="stat-lbl">${c.lbl}</div>
+    <div class="stat-val${c.cls?' '+c.cls:''}">${c.val}</div>
+    ${c.sub?`<div class="stat-sub">${c.sub}</div>`:''}
+  </div>`).join('');
+}
+
+function buildChart() {
+  /* Defer drawing one frame so the end screen has laid out and canvas has real width */
+  requestAnimationFrame(function() {
+    const canvas = document.getElementById('score-chart');
+    const legend = document.getElementById('e-legend');
+    const done   = rounds.filter(r =>
+      players.filter(p=>p.active).every(p => r.scores[p.id]!==null && r.scores[p.id]!==undefined)
+    );
+    if (!done.length) { canvas.style.display='none'; return; }
+    canvas.style.display='block';
+
+    const series = players.map((p,pi) => {
+      let run=0;
+      const pts=[0,...done.map(r=>{ run+=(r.scores[p.id]??0); return run; })];
+      return { p, pts, color: CHART_COLORS[pi%CHART_COLORS.length] };
+    });
+
+    const numX = done.length + 1;
+    const allV = series.flatMap(s=>s.pts);
+    const minV = Math.min(0,...allV);
+    const maxV = Math.max(limit,...allV);
+    const rng  = maxV - minV || 1;
+
+    const box = canvas.parentElement;
+    const W   = Math.max(box.offsetWidth - 8, 200);
+    const H   = 240;
+    const PL=40, PR=20, PT=16, PB=30;
+    const pW=W-PL-PR, pH=H-PT-PB;
+
+    canvas.width=W; canvas.height=H;
+    canvas.style.width=W+'px'; canvas.style.height=H+'px';
+
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,W,H);
+
+    /* y: low value → bottom of chart, high value → top */
+    const toY = v => PT + pH * (1 - (v - minV) / rng);
+    const toX = i => numX<=1 ? PL+pW/2 : PL + (pW/(numX-1))*i;
+
+    /* Grid + Y labels — bottom label = 0, top label = maxV */
+    ctx.font='10px DM Sans,sans-serif';
+    for (let i=0; i<=5; i++) {
+      const val = minV + (rng/5)*i;
+      const y   = toY(val);
+      ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(PL,y); ctx.lineTo(PL+pW,y); ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.textAlign='right';
+      ctx.fillText(Math.round(val), PL-5, y+3.5);
+    }
+
+    /* Limit line */
+    const limY=toY(limit);
+    ctx.strokeStyle='rgba(224,92,92,0.5)'; ctx.setLineDash([4,4]); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(PL,limY); ctx.lineTo(PL+pW,limY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(224,92,92,0.7)'; ctx.font='9px DM Sans,sans-serif'; ctx.textAlign='left';
+    ctx.fillText('Max', PL+pW+3, limY+3);
+
+    /* X labels */
+    ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.textAlign='center'; ctx.font='10px DM Sans,sans-serif';
+    for (let i=0; i<numX; i++) ctx.fillText(i===0?'Start':''+i, toX(i), H-10);
+
+    /* Lines + dots */
+    series.forEach(s=>{
+      const pts=s.pts.map((v,i)=>({x:toX(i),y:toY(v)}));
+      ctx.beginPath(); ctx.strokeStyle=s.color; ctx.lineWidth=2.5; ctx.lineJoin='round';
+      pts.forEach((pt,i)=>i===0?ctx.moveTo(pt.x,pt.y):ctx.lineTo(pt.x,pt.y));
+      ctx.stroke();
+      pts.forEach(pt=>{
+        ctx.beginPath(); ctx.arc(pt.x,pt.y,3.5,0,Math.PI*2);
+        ctx.fillStyle=s.color; ctx.fill();
+      });
+    });
+
+    legend.innerHTML=series.map(s=>
+      `<div class="leg-item"><div class="leg-dot" style="background:${s.color}"></div><span>${s.p.name}</span></div>`
+    ).join('');
+  });
+}
+
+function buildEndTable() {
+  /* colgroup */
+  document.getElementById('e-cols').innerHTML =
+    '<col style="width:44px">' + players.map(()=>'<col style="min-width:72px">').join('');
+
+  document.getElementById('e-head').innerHTML = '<tr><th>Giv</th>' +
+    players.map(p=>`<th>${ini(p.name)}<br><span style="font-size:9px;font-weight:400;color:var(--tx3)">${p.name}</span></th>`).join('')+'</tr>';
+
+  const body=document.getElementById('e-body');
+  body.innerHTML='';
+  rounds.forEach((round,ri)=>{
+    const filled=players.map(p=>round.scores[p.id]).filter(v=>v!==null&&v!==undefined);
+    const minV=filled.length?Math.min(...filled):null;
+    const dealer=dealerForRound(ri);
+    const tr=document.createElement('tr');
+    const giv=document.createElement('td'); giv.className='etd-giv';
+    giv.textContent=dealer?ini(dealer.name):''; tr.appendChild(giv);
+    players.forEach(p=>{
+      const td=document.createElement('td');
+      const s=round.scores[p.id], has=s!==null&&s!==undefined;
+      const isLo=has&&s===minV&&filled.length>1;
+      td.className='etd-s'+(isLo?' lo':'');
+      if(has){const sp=document.createElement('span');sp.className='sv'+(s<0?' neg':'');sp.textContent=(s>0?'+':'')+s;td.appendChild(sp);}
+      else{td.textContent='—';td.style.cssText='color:var(--tx3);font-size:12px';}
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+
+  calcTotals();
+  document.getElementById('e-foot').innerHTML='<tr><td class="elbl">Tot</td>'+
+    players.map(p=>`<td style="${p.total>limit?'color:var(--red)':''}">${p.total}</td>`).join('')+'</tr>';
+}
+
+/* ─ NAV ─ */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  /* Always ensure home link is present on setup screen */
+  if(id==='s-setup'){
+    const tb=document.getElementById('setup-topbar');
+    if(tb && !tb.querySelector('a')) tb.innerHTML='<a href="index.html" class="setup-back">← Alla spel</a>';
+  }
+  window.scrollTo(0,0);
+}
+function askAgain(){openDlg('d-again');}
+function againSame(){
+  closeDlg('d-again');
+  const names=players.map(p=>p.name);
+  players=names.map((n,i)=>({id:i,name:n,active:true,total:0}));
+  rounds=[]; pendingNext=false;
+  addRound(players[Math.floor(Math.random()*players.length)].id);
+  document.getElementById('lim-pill').textContent='Max '+limit+' p';
+  showScreen('s-game'); renderGame();
+}
+function againNew(){ closeDlg('d-again'); window.location.href='index.html'; }
+function goHome(){ window.location.href='index.html'; }
+function resetSetup(){
+  rowCount=1; selLim=100; customLim=false;
+  document.getElementById('pfields').innerHTML=`<div class="p-row" id="prow-0">
+    <div class="p-num">1</div>
+    <input class="p-inp" type="text" id="pi-0" placeholder="Spelare 1" maxlength="28">
+    <button class="btn-add" onclick="addRow(0)">Lägg till</button></div>`;
+  document.getElementById('pi-0').addEventListener('keydown',e=>{if(e.key==='Enter')addRow(0);});
+  document.querySelectorAll('.l-opt').forEach((b,i)=>b.classList.toggle('on',i===2));
+  document.getElementById('lim-cust').classList.remove('show');
+  document.getElementById('lim-inp').value='';
+}
+document.getElementById('pi-0').addEventListener('keydown',e=>{if(e.key==='Enter')addRow(0);});
+</script>
+</body>
+</html>
